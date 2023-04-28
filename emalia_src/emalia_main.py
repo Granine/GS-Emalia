@@ -14,6 +14,8 @@ class EmailManager():
     """
     def __init__(self, HANDLER_EMAIL:str="", HANDLER_PASSWORD:str="", HANDLER_SMTP:str|dict="smtp.gmail.com", HANDLER_IMAP:str|dict="imap.gmail.com"):
         """initialize email manager service
+        @param `HANDLER_EMAIL:str` email address (also login email to smtp and imap), if not provided, attempt to read from environmental var
+        @param `HANDLER_PASSWORD:str` login password, if not provided, attempt to read from environmental var
         @param `HANDLER_SMTP:str|dict` smtp server configuration, str for server address, dict for elements supported by smtplib.SMTP_SSL, enter None or "" or 0 to read from Environmental variable
         @param `HANDLER_IMAP:str|dict` imap server configuration, str for server address, dict for elements supported by imaplib.IMAP4_SSL, enter None or "" or 0 to read from Environmental variable
         """
@@ -44,6 +46,9 @@ class EmailManager():
     
     def send_email(self, target_email:str, email_subject:str, email_body:str=""):
         """Send a email to target email
+        @param `target_email:str` to whom the email will be sent
+        @param `email_subject:str` subject of email to send
+        @param `email_body:str` body of the email
         TODO: support attachments
         """
         # Create response email
@@ -60,7 +65,8 @@ class EmailManager():
     def fetch_unread_email(self, count:int, mark_read:bool=True)->list:
         """ Fetch unread emails by count number
         @param `count:int` Number of latest unread to fetch, <0 for all
-        
+        @param `mark_read:bool` if true, mark fetched email as "\seen"
+        @return `:list` return a list of email fetched. Format: [unread_email_id, unread_email_status, unread_email_content, unread_email raw]
         """
 
         with imaplib.IMAP4_SSL(self.HANDLER_IMAP) as imap:
