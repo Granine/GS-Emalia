@@ -12,8 +12,14 @@ class EmailManager():
     TODO: support passwording
     TODO: support saving attachments
     """
-    def __init__(self, HANDLER_EMAIL:str="", HANDLER_PASSWORD:str="", HANDLER_SMTP:str|dict="smtp.gmail.com", HANDLER_IMAP:str|dict="imap.gmail.com"):
+    def __init__(self, enable_history:bool=True, HANDLER_EMAIL:str="", HANDLER_PASSWORD:str="", HANDLER_SMTP:str|dict="smtp.gmail.com", HANDLER_IMAP:str|dict="imap.gmail.com"):
         """initialize email manager service
+        TODO @param `enable_history:str` if not False will record email sent and received, takes "local", [FILE PATH], "cache", "cache-[Int]" and "all"
+          if local: save to a local file that can be accessed later at default location __file__/..
+          if [FILE PATH]: save the local file to FILE PATH
+          if cache: email in variable, unlimited size list from earliest to latest
+          if cache-[INT]: save a max of INT email in cache, then delete from latest 
+          if all, [FILE PATH]-[INT]: save to both variable and file
         @param `HANDLER_EMAIL:str` email address (also login email to smtp and imap), if not provided, attempt to read from environmental var
         @param `HANDLER_PASSWORD:str` login password, if not provided, attempt to read from environmental var
         @param `HANDLER_SMTP:str|dict` smtp server configuration, str for server address, dict for elements supported by smtplib.SMTP_SSL, enter None or "" or 0 to read from Environmental variable
