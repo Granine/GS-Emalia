@@ -2,6 +2,7 @@
 A centralized email controller that provide various python application control capability through email
 # WIP
 Please note Emalia is under active development and is not currently functional
+
 ## Emalia
 the process responsible to handle user request through email
 - sending new email ro emalia starts a new session
@@ -11,14 +12,15 @@ the process responsible to handle user request through email
 ## EmailManager
 The process responsible for email management like reading email, sending email
 
-## Plan
+## Development plans
 - Control local data file through email
 - Request password and other validation method from email sender when performing certain actions
 - Email white/black list
-- History Email storage
+- History Email storage and pulling
 - Easily adaptable to other software
 - UI to launch software
 - Best if software can run backend
+- Parallel email support
 
 ## Version
 - Stage REM (WIP):
