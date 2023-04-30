@@ -32,7 +32,7 @@ def check_path_in_range(target_path:str, check_path:str, layer:int=1) -> bool:
         # if difference is found in path, calculate number of directory differs
         if target_path_splitted[i] != check_path_splitted[i]:
             break
-    else:
+    else: # if ended without break, [i] is good, move to next index
         i = i + 1
     diff_layer = len(check_path_splitted[i:]) + len(target_path_splitted[i:])
             
