@@ -11,6 +11,7 @@ def check_path_in_range(target_path:str, check_path:str, layer:int=1) -> bool:
     Example: if file a/b/c1.txt
         layer 1: same parent folder so a/b, a/b/c2.txt == True but not a or a/b/c/d.txt
         layer 2: parent folder and all content in one level child folder so a/b1.txt or a/b/c/d1.txt == True
+        different parent: if file have different parents, calculate the path size example a/B/C1.txt have 3 layers 
     """
     # Get directory of target_path if it's a file
     if not os.path.isdir(target_path):
