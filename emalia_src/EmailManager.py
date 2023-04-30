@@ -11,6 +11,7 @@ class EmailManager():
     TODO: support reply to emails
     TODO: support passwording
     TODO: support saving attachments
+    TODO: support common smtp and imap
     """
     def __init__(self, enable_history:bool=True, HANDLER_EMAIL:str="", HANDLER_PASSWORD:str="", HANDLER_SMTP:str|dict="smtp.gmail.com", HANDLER_IMAP:str|dict="imap.gmail.com"):
         """initialize email manager service
@@ -26,14 +27,16 @@ class EmailManager():
         @param `HANDLER_IMAP:str|dict` imap server configuration, str for server address, dict for elements supported by imaplib.IMAP4_SSL, enter None or "" or 0 to read from Environmental variable
         """
         self.HANDLER_EMAIL = HANDLER_EMAIL if HANDLER_EMAIL else os.environ.get("HANDLER_EMAIL")
+        assert self.HANDLER_EMAIL and isinstance(self.HANDLER_EMAIL, str)
         self.HANDLER_PASSWORD = HANDLER_PASSWORD if HANDLER_PASSWORD else os.environ.get("HANDLER_PASSWORD")
+        assert self.HANDLER_PASSWORD and isinstance(self.HANDLER_PASSWORD, str)
         # SMTP
         if HANDLER_SMTP and isinstance(HANDLER_SMTP, str):
             self.HANDLER_SMTP = {"host": HANDLER_SMTP, "port": 465}
         elif HANDLER_SMTP and isinstance(HANDLER_SMTP, dict):
             self.HANDLER_SMTP = HANDLER_SMTP
         else:
-            self.HANDLER_SMTP = os.environ.get("HANDLER_SMTP")
+            self.HANDLER_SMTP = eval(os.environ.get("HANDLER_SMTP"))
         # test dict is compilable with smtp
         with smtplib.SMTP_SSL(**self.HANDLER_SMTP) as test:
             pass
@@ -44,9 +47,9 @@ class EmailManager():
         elif HANDLER_IMAP and isinstance(HANDLER_IMAP, dict):
             self.HANDLER_IMAP = HANDLER_IMAP
         else:
-            self.HANDLER_IMAP = os.environ.get("HANDLER_SMTP")
+            self.HANDLER_IMAP = eval(os.environ.get("HANDLER_SMTP"))
         # test dict is compilable with imap
-        with imaplib.IMAP4_SSL(**HANDLER_IMAP) as test:
+        with imaplib.IMAP4_SSL(**self.HANDLER_IMAP) as test:
             pass
     
     def send_email(self, target_email:str, email_subject:str, email_body:str=""):
