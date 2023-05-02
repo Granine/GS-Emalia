@@ -25,9 +25,39 @@ def test_EmailManager_basic_init():
     mock_imap_value.__exit__.return_value = None
     mock_select_response = ""
     mock_imap_value.select.return_value = mock_select_response
-    mock_search_response = ('OK', [b'1 2 3'])
+    mock_search_response = ("OK", [b"123 234 345"])
     mock_imap_value.search.return_value = mock_search_response
-    mock_fetch_response = ('OK', [(b'1', b'SOME_DATA')])
+    mock_fetch_response = ("OK", [(b"345", b"CONTENT")])
     mock_imap_value.fetch.return_value = mock_fetch_response
+    mock_imap_value.store.return_value = ""
     
     
+    # Replace smtplib.SMTP_SSL with the MagicMock object using patch
+    with mock.patch("smtplib.SMTP_SSL", return_value=mock_smtp_value) as mock_smtp:
+        with mock.patch("imaplib.IMAP4_SSL", return_value=mock_imap_value) as mock_imap:
+            # init function
+            emanager = EmailManager.EmailManager(HANDLER_EMAIL="1", HANDLER_PASSWORD="2")
+            assert emanager
+            
+            # send email, use mask smtp
+            emanager.send_email("1", "2", "3")
+            mock_smtp_value.send_message.assert_called_once()
+            
+            # test fetch unread email
+            email_list = emanager.fetch_unread_email(1)
+            mock_imap_value.search.assert_called_once()
+            assert len(email_list) == 1
+            assert isinstance(email_list, list)
+            assert email_list[0][0] == "345"
+            
+            # test parse email
+            parsed_email = emanager.parse_email(email_list[0][1])
+            assert parsed_email
+            
+            # test mark
+            marked_email = emanager.mark_email(email_list[0][0])
+            assert marked_email == [email_list[0][0]]
+            marked_email = emanager.mark_email([email_list[0][0]])
+            assert marked_email == [email_list[0][0]]
+            marked_email = emanager.mark_email(1)
+            assert isinstance(marked_email, list)
