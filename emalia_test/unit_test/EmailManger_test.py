@@ -8,6 +8,7 @@ import imaplib
 from email.parser import BytesParser
 from email.policy import default
 
+# TODO test reading and saving attachments
 def test_EmailManager_basic_init():
     # mock smtp
     mock_smtp_value = mock.MagicMock(spec=smtplib.SMTP_SSL)
