@@ -18,7 +18,7 @@ Standard mode
 
 class Emalia():
     def __init__(self, permission:str="default", HANDLER_EMAIL:str="", HANDLER_PASSWORD:str="", HANDLER_SMTP:str|dict="smtp.gmail.com", HANDLER_IMAP:str|dict="imap.gmail.com"):
-        """Create a email service bot that start handling incomming emails
+        """Create a email service bot that start handling incoming emails
 
         @param permission (str, optional): What Emalia is allowed to do to local file
             {"action": ACTION, range": RANGE}
@@ -50,7 +50,7 @@ class Emalia():
         self.running = True
         while self.running:
             time.sleep(2)
-            print("loop")
+            print(self.email_handler.fetch_unread_email(1, False))
             pass
         
     def break_loop(self):
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     main_loop_thread.start()
     supported_command = ["stop"]
     while selection:=input("Command: ") not in supported_command:
-        print(f"input {selection} is not a valid command: {supported_command}")
+        print(f"input {selection} is not a valid command from list: {supported_command}")
     emalia_instance.break_loop()
     main_loop_thread.join()
     print("Tasks complete")
