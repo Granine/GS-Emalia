@@ -187,8 +187,6 @@ class EmailManager():
             for part in email.walk():
                 content_disposition = part.get("Content-Disposition", None)
             
-        print("Body:", body)
-        print(email.values())
         return {
             "Body": body, 
             "Return-Path": email["Return-Path"], 
