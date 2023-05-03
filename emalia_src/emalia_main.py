@@ -3,7 +3,7 @@ import FileManager
 import threading
 import time
 
-"""Emalia logic
+"""Emalia: an email interacted system that manages and perform a list of predefined tasks.
 Standard mode
 - actively check email
 * Future version may support google api, ifttt or zappier for passive trigger
