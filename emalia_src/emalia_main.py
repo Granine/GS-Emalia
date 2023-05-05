@@ -57,12 +57,18 @@ class Emalia():
         # TODO enforce time between scan
         self.running = True
         self.server_start_time = datetime.datetime.now()
-        # infinitly loop unless self.running is changed in loop or from other functions in separate process
+        # infinity loop unless self.running is changed in loop or from other functions in separate process
         while self.running:
+            loop_start_time = datetime.datetime.now()
             time.sleep(scan_interval)
             print(self.email_handler.fetch_unread_email(1, False))
             pass
-        # return servver completion time
+            loop_end_time = datetime.datetime.now()
+            loop_time = (loop_end_time.second - loop_start_time.second)
+            if (scan_interval - loop_time) > 0:
+                time.sleep(scan_interval - loop_time)
+            print(scan_interval - loop_time)
+        # return server completion time
         return datetime.datetime.now()
         
     def break_loop(self):
