@@ -2,6 +2,7 @@ import EmailManager
 import FileManager
 import threading
 import time
+import datetime
 
 """Emalia: an email interacted system that manages and perform a list of predefined tasks.
 Standard mode
@@ -55,10 +56,14 @@ class Emalia():
         # TODO check running
         # TODO enforce time between scan
         self.running = True
+        self.server_start_time = datetime.datetime.now()
+        # infinitly loop unless self.running is changed in loop or from other functions in separate process
         while self.running:
             time.sleep(scan_interval)
             print(self.email_handler.fetch_unread_email(1, False))
             pass
+        # return servver completion time
+        return datetime.datetime.now()
         
     def break_loop(self):
         self.running = False
