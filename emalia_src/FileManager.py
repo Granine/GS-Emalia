@@ -6,7 +6,7 @@ def check_path_in_range(target_path:str, check_path:str, layer:int=1) -> bool:
     """Check target_path inside the layer count of check_path, use parent directory instead of actual file
     @param `target_path:str` target to check
     @param `check_path:str`  path to check
-    @param `layer:int` range of directory layers to check
+    @param `layer:int` range of directory layers to check, if == 0 return tru if exact match, <0 always false
     @return `:bool` True if in range, False otherwise
     Example: if file a/b/c1.txt
         layer 1: same parent folder so a/b, a/b/c2.txt == True but not a or a/b/c/d.txt

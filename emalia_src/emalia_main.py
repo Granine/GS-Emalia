@@ -19,15 +19,17 @@ Standard mode
 
 class Emalia():
     instance_name = "Emalia" # name of the service robot, Emalia is her default name
+    server_start_time = None
     def __init__(self, permission:str="default", HANDLER_EMAIL:str="", HANDLER_PASSWORD:str="", HANDLER_SMTP:str|dict="smtp.gmail.com", HANDLER_IMAP:str|dict="imap.gmail.com"):
         """Create a email service robot instance. Make sure you run mainloop to start service
         @param permission (str, optional): What Emalia is allowed to do to local file
             {"action": ACTION, range": RANGE}
-                ACTION(str|list): "read", "write", "shell", "all" what Emalia is allowed to do with data
+                ACTION(str|list): "read", "write", "shell", "all", "none" what Emalia is allowed to do with data
                 RANGE(int|list): directory Emalia can access
                     if int: directory levels Emalia is allowed to perform the action relative to __FILE__, negative for all range
                         eg: if 1 directory a/b/emlia_main.py, Emalia can access a/b/text.txt, a/b/c/text.text but not nothing in a/ or a/b/c/d please see check_path_in_range->example for more information
                     if list of string: directories (and subdirectory) Emalia can access 
+                    <=0 for no access, but one should really set action instead
             "default": short for {"action": ["read", "write"], "range": 1}
             "full": short for {"action": "all", "range": -1}
         @param HANDLER_EMAIL (str, optional): will attempt to read from env var if empty or not provided
@@ -60,7 +62,6 @@ class Emalia():
             loop_start_time = datetime.datetime.now()
             time.sleep(scan_interval)
             print(self.email_handler.fetch_unread_email(1, False))
-            pass
             loop_end_time = datetime.datetime.now()
             loop_time = (loop_end_time.second - loop_start_time.second)
             if (scan_interval - loop_time) > 0:
@@ -70,6 +71,8 @@ class Emalia():
         return datetime.datetime.now()
         
     def break_loop(self):
+        """Stop the execution of mainloop externally
+        Repeated call have no effect"""
         self.running = False
         
 if __name__ == "__main__":
