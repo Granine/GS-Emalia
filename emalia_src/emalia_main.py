@@ -53,8 +53,6 @@ class Emalia():
         @param `scan_interval:float` the time to pause between each email scan session, if processing tie (request time >= scan_interval, there will be no pause)
         Info: Only one main_loop or async_main_loop can run, all other calls will not create new Emalia loops. Please create new Emalia Object to do such task
         """
-        # TODO check running
-        # TODO enforce time between scan
         self.running = True
         self.server_start_time = datetime.datetime.now()
         # infinity loop unless self.running is changed in loop or from other functions in separate process
