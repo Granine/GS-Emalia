@@ -54,6 +54,7 @@ class Emalia():
     def main_loop(self, scan_interval:float=5):
         """Start the email listener
         @param `scan_interval:float` the time to pause between each email scan session, if processing tie (request time >= scan_interval, there will be no pause)
+        @return `:datetime.datetime` time of main_loop completion
         Info: Only one main_loop or async_main_loop can run, all other calls will not create new Emalia loops. Please create new Emalia Object to do such task
         """
         self.PID = os.getpid()
