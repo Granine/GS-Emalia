@@ -3,6 +3,7 @@ import FileManager
 import threading
 import time
 import datetime
+import os
 
 """Emalia: an email interacted system that manages and perform a list of predefined tasks.
 Standard mode
@@ -47,7 +48,7 @@ class Emalia():
             self.permission = permission
         else:
             raise AttributeError("Unknown permission value")
-        
+        self.PID = os.getpid()
         self.email_handler = EmailManager.EmailManager(HANDLER_PASSWORD=HANDLER_PASSWORD, HANDLER_EMAIL=HANDLER_EMAIL, HANDLER_SMTP=HANDLER_SMTP, HANDLER_IMAP=HANDLER_IMAP)
         
     def main_loop(self, scan_interval:float=5):
@@ -55,6 +56,7 @@ class Emalia():
         @param `scan_interval:float` the time to pause between each email scan session, if processing tie (request time >= scan_interval, there will be no pause)
         Info: Only one main_loop or async_main_loop can run, all other calls will not create new Emalia loops. Please create new Emalia Object to do such task
         """
+        self.PID = os.getpid()
         self.running = True
         self.server_start_time = datetime.datetime.now()
         # infinity loop unless self.running is changed in loop or from other functions in separate process
@@ -62,6 +64,7 @@ class Emalia():
             loop_start_time = datetime.datetime.now()
             time.sleep(scan_interval)
             print(self.email_handler.fetch_unread_email(1, False))
+            print(os.getpid())
             loop_end_time = datetime.datetime.now()
             loop_time = (loop_end_time.second - loop_start_time.second)
             if (scan_interval - loop_time) > 0:
@@ -76,6 +79,7 @@ class Emalia():
         self.running = False
         
 if __name__ == "__main__":
+    print("PID:" + str(os.getpid()))
     emalia_instance = Emalia()
     main_loop_thread = threading.Thread(target=emalia_instance.main_loop)
     main_loop_thread.start()
