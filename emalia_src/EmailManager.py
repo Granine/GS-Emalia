@@ -187,17 +187,23 @@ class EmailManager():
                 imap.store(email_id, action, flag)
         return emails_list
     
-    def parse_email(self, email:Message):
+    def parse_email(self, email:Message)->dict:
+        """Parse a Message format email into simple, clean dict while downloading attachments
+        @param `email:Message` the email to parse
+        @return `:dict` with keys "Body", "Return-Path", "Received", "Date", "From", "Subject", "Sender", "To", "cc", "attachments:list of path"
+        """
         def clean(text):
-        # clean text for creating a folder
+            # clean text for creating a folder
             return "".join(c if c.isalnum() else "_" for c in text)
         body = ""
         if email.is_multipart():
             for part in email.walk():
                 content_type = part.get_content_type()
                 content_disposition = part.get("Content-Disposition", None)
+                # Get body
                 if content_type == "text/plain" and "attachment" not in str(content_disposition):
                     body = part.get_payload(decode=True).decode()
+                # Get the attachments
                 elif content_disposition is not None and content_disposition.strip().startswith("attachment"):
                     file_data = part.get_payload(decode=True)
                     file_name = part.get_filename()
@@ -213,12 +219,6 @@ class EmailManager():
                         open(filepath, "wb").write(part.get_payload(decode=True))
         else:
             body = email.get_payload(decode=True).decode()
-
-        # Get the attachments
-        attachments = []
-        if email.is_multipart():
-            for part in email.walk():
-                content_disposition = part.get("Content-Disposition", None)
             
         return {
             "Body": body, 
