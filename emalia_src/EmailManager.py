@@ -57,6 +57,18 @@ class EmailManager():
         # test dict is compilable with imap
         with imaplib.IMAP4_SSL(**self.HANDLER_IMAP) as test:
             pass
+        
+    def unseen_email(self):
+        with imaplib.IMAP4_SSL(**self.HANDLER_IMAP) as imap:
+            imap.login(self.HANDLER_EMAIL, self.HANDLER_PASSWORD)
+            imap.select("inbox")
+
+            # Search for all unread emails
+            search_status, response = imap.search(None, "UNSEEN")
+            if search_status.lower() != "ok":
+                raise ConnectionError(f"Cannot perform search")
+            unseen_email_ids = [int(s) for s in response[0].split()]
+        return unseen_email_ids
     
     def send_email(self, target_email:str, email_subject:str, email_body:str=""):
         """Send a email to target email
@@ -77,7 +89,7 @@ class EmailManager():
             server.send_message(outgoing_email)
             
     def fetch_unread_email(self, count:int, mark_read:bool=True)->list:
-        """ Fetch unread emails by count number
+        """ Fetch unread emails and body by count number
         @param `count:int` Number of latest unread to fetch, <0 for all
         @param `mark_read:bool` if true, mark fetched email as "\seen"
         @return `:list` return a list of email fetched. Format: [[unread_email_id, unread_email_status, email, unread_email raw]]
