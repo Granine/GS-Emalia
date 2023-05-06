@@ -59,16 +59,37 @@ class EmailManager():
             pass
         
     def unseen_email(self):
+        """Return a list of unseen email ids
+        @return `:list` of unseen email ids
+        """
         with imaplib.IMAP4_SSL(**self.HANDLER_IMAP) as imap:
             imap.login(self.HANDLER_EMAIL, self.HANDLER_PASSWORD)
-            imap.select("inbox")
+            imap.select("inbox", readonly=True)
 
             # Search for all unread emails
             search_status, response = imap.search(None, "UNSEEN")
             if search_status.lower() != "ok":
                 raise ConnectionError(f"Cannot perform search")
-            unseen_email_ids = [int(s) for s in response[0].split()]
+            unseen_email_ids = [s.decode() for s in response[0].split()]
         return unseen_email_ids
+    
+    def fetch_email(self, email_id:int, mark_read:bool=True)->Message:
+        with imaplib.IMAP4_SSL(**self.HANDLER_IMAP) as imap:
+            imap.login(self.HANDLER_EMAIL, self.HANDLER_PASSWORD)
+            imap.select("inbox", readonly=True)
+            email_status, email_content = imap.fetch(email_id, "(BODY.PEEK[])")
+            if email_status.lower() != "ok":
+                raise ConnectionError(f"Cannot fetch email {email_id}")
+            raw_email = email_content[0][1]
+            parsed_email = BytesParser(policy=default).parsebytes(raw_email)
+            parsed_email = message_from_bytes(raw_email)
+            # for some reason BODY.PEEK[] does not work, so label as seen/unseen
+            if mark_read:
+                # Mark the email as read
+                imap.store(email_id, "+FLAGS", "\\Seen")
+            else:
+                imap.store(email_id, "-FLAGS", "\\Seen")
+        return parsed_email
     
     def send_email(self, target_email:str, email_subject:str, email_body:str=""):
         """Send a email to target email
@@ -96,7 +117,7 @@ class EmailManager():
         """
         with imaplib.IMAP4_SSL(**self.HANDLER_IMAP) as imap:
             imap.login(self.HANDLER_EMAIL, self.HANDLER_PASSWORD)
-            imap.select("inbox")
+            imap.select("inbox", readonly=True)
 
             # Search for all unread emails
             search_status, response = imap.search(None, "UNSEEN")
@@ -108,14 +129,14 @@ class EmailManager():
             # fetch and record each email by ID
             for unread_email_id in unread_emails_ids:
                 unread_email_id = unread_email_id.decode()
-                unread_email_status, unread_email = imap.fetch(unread_email_id, "(RFC822)")
+                unread_email_status, unread_email = imap.fetch(unread_email_id, "(BODY.PEEK[])") # or RFC822
                 if unread_email_status.lower() != "ok":
                     raise ConnectionError(f"Cannot fetch email {unread_email_id}: {unread_email}")
                 raw_email = unread_email[0][1]
                 email = BytesParser(policy=default).parsebytes(raw_email)
                 email = message_from_bytes(raw_email)
                 unread_emails_list.append([unread_email_id, email])
-                # for somereason BODY.PEEK[] does not work, so label as seen/unseen
+                # for some reason BODY.PEEK[] does not work, so label as seen/unseen
                 if mark_read:
                     # Mark the email as read
                     imap.store(unread_email_id, "+FLAGS", "\\Seen")
@@ -142,7 +163,7 @@ class EmailManager():
         
         with imaplib.IMAP4_SSL(**self.HANDLER_IMAP) as imap:
             imap.login(self.HANDLER_EMAIL, self.HANDLER_PASSWORD)
-            imap.select("inbox")
+            imap.select("inbox", readonly=True)
 
             if isinstance(target, int):
                 status, response = imap.search(None, "ALL")
