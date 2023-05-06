@@ -63,8 +63,9 @@ class Emalia():
         while self.running:
             loop_start_time = datetime.datetime.now()
             time.sleep(scan_interval)
-            print(self.email_handler.fetch_unread_email(1, False))
-            print(os.getpid())
+            #print(self.email_handler.fetch_unread_email(1, False))
+            print(ue:=self.email_handler.unseen_email())
+            print(self.email_handler.fetch_email(ue[0]))
             loop_end_time = datetime.datetime.now()
             loop_time = (loop_end_time.second - loop_start_time.second)
             if (scan_interval - loop_time) > 0:
