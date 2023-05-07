@@ -13,8 +13,8 @@ class Emalia():
         - conversation through email and reply
     Receive Email Structure:
         body: [action] [command(s)] [password] + [attachments]
-    Reply Email Structure:
-        body: [response] [potential next step command(s)] [footer]] + [attachments]
+    Emalia Response Email Structure:
+        body: [response] [potential next step command(s)] [footer] + [attachments]
     Supported tasks: (not case sensitive)
         0. manage emalia: [Emalia Instance Name]/0 [command]: various command to manage emalia
         1. read file: READ/1 [PATH]: zip if directory
@@ -31,6 +31,9 @@ class Emalia():
     server_running:bool = False # if True, a server is running, set to false will stop server at next loop
     max_send_count = 0 # max email emalia can send per instance, <0 for infinite
     statistics:dict = {"sent": None, "received": None} # track statistics for current/last running instance, {"sent":int, "received":int}
+    permission = {}
+    custom_tasks = {} # user defined tasks on the run
+    # for worker function setting section see section "WORKER FUNCTIONS"
     
     def __init__(self, permission:str="default", HANDLER_EMAIL:str="", HANDLER_PASSWORD:str="", HANDLER_SMTP:str|dict="smtp.gmail.com", HANDLER_IMAP:str|dict="imap.gmail.com"):
         """Create a email service robot instance. Make sure you run mainloop to start service
@@ -102,6 +105,24 @@ class Emalia():
         """Check if a user provided password is the save as record
         """
         pass
+    
+    # ========================== WORKER FUNCTIONs =========================
+    
+    
+    @property
+    def task_list(self):
+        """Worker function list and access keys"""
+        default_worker_functions = {
+            0: self._action_manage_emalia,
+            1: self._action_read_file,
+            2: self._action_write_file,
+            3: self._action_make_request,
+            4: self._action_execute_powershell,
+            5: self._action_execute_python,
+            6: self._action_m,
+            9: self._action_register_custom_task
+        }
+        return default_worker_functions.update(self.custom_tasks)
         
     def _action_manage_emalia(self, emalia_command):
         """0 Alter emalia behaviour by emalia permission
@@ -133,13 +154,17 @@ class Emalia():
         """
         pass
     
-    def _store_custom_task(self, task):
+    def _action_register_custom_task(self, task):
         """9 user can store custom tasks (nest multiple or define new)
         """
+        self.custom_tasks = {}
+        pass
         
-    def _run_custom_task(self, name):
+    def _action_run_custom_task(self, name):
         """? run user stored custom tasks 
         """
+        pass
+
     
 if __name__ == "__main__":
     #TODO support comamndline trigger of emalia_main.py
