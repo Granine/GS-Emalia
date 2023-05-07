@@ -31,7 +31,7 @@ an email interacted system that manages and perform a list of predefined tasks.
 The process responsible for email management like reading email, sending email
 
 ## Version
-- Stage Penpoint (WIP):
+- Stage Penpoint (Completed):
     - (o) Basic EmailManager functionality
       - (o) email receiving
       - (o) email sending
@@ -42,7 +42,7 @@ The process responsible for email management like reading email, sending email
     - (1/2) Basic test structure
     - () Basic FileManager functionality
       - (o) calculate file distance (depth wise)
-      - () search files
+      - (o) search files
       - () safe file delete
     - () Worker functions (0-5)
     - () Task distribution system
@@ -50,13 +50,13 @@ The process responsible for email management like reading email, sending email
       - () enable/disable functions
     - () Save the current conversation chain to a file
     - () Maintain conversation
-- Stage Piston (Functional development)
+- Stage Piston 
     - () Security
         - () Support password
         - () Support file access range
         - () Email white/black list
         - () Worker fucntions (0-1)
     - () Read history emails conversation (local save)
-- Version 0.0.1 (Formal deployment)
+- Version 0.0.1
     - () Basic UI
 
