@@ -1,7 +1,5 @@
 import imaplib
 import smtplib
-from email.mime.text import MIMEText
-from email.contentmanager import ContentManager
 from email.parser import BytesParser
 from email.policy import default
 from email.message import Message
@@ -119,7 +117,7 @@ class EmailManager():
         """ Fetch unread emails and body by count number
         @param `count:int` Number of latest unread to fetch, <0 for all
         @param `mark_read:bool` if true, mark fetched email as "\seen"
-        @return `:list` return a list of email fetched. Format: [[unread_email_id, unread_email_status, email, unread_email raw]]
+        @return `:list of tuple of len=2` return a list of email fetched. Format: [(unread_email_id:Str, email:Message)]
         """
         with imaplib.IMAP4_SSL(**self.HANDLER_IMAP) as imap:
             imap.login(self.HANDLER_EMAIL, self.HANDLER_PASSWORD)
