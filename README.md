@@ -1,10 +1,12 @@
 # GS-Emalia
-A centralized email controller that provide various python application control capability through email
+A centralized email controller that provide various python application control capability through email.
+
 # WIP
 Please note Emalia is under active development and is not currently functional
 
 ## Emalia
 an email interacted system that manages and perform a list of predefined tasks.
+
 ### Task list (WIP)
 0. manage emalia: [Emalia Instance Name]/0 [command]: various command to manage emalia
 1. read file: READ/1 [PATH]: zip if directory
@@ -27,14 +29,6 @@ an email interacted system that manages and perform a list of predefined tasks.
 
 ## EmailManager
 The process responsible for email management like reading email, sending email
-
-## Development plans
-- Email white/black list
-- History Email storage and pulling
-- Easily adaptable to other software
-- UI to launch software
-- Best if software can run backend
-- Parallel email support
 
 ## Version
 - Stage Penpoint (WIP):
@@ -62,5 +56,7 @@ The process responsible for email management like reading email, sending email
         - () Support file access range
         - () Email white/black list
         - () Worker fucntions (0-1)
+    - () Read history emails conversation (local save)
 - Version 0.0.1 (Formal deployment)
+    - () Basic UI
 
