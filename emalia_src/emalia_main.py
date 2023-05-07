@@ -5,19 +5,6 @@ import time
 from datetime import datetime
 import os
 
-"""Emalia: an email interacted system that manages and perform a list of predefined tasks.
-Standard mode
-- actively check email
-* Future version may support google api, ifttt or zappier for passive trigger
-- check request
-- check permission
-- complete request
-- return confirmation email that may contain the next step
-
-- Each "session" or "conversation" is a new reply chain
-- sending new email starts a new emalia session
-"""
-
 class Emalia():
     """an email interacted system that manages and perform a list of predefined tasks.
     Basic:
@@ -26,16 +13,18 @@ class Emalia():
         - conversation through email and reply
     Receive Email Structure:
         body: [action] [command(s)] [password] + [attachments]
-    Supported tasks:
+    Reply Email Structure:
+        body: [response] [potential next step command(s)] [footer]] + [attachments]
+    Supported tasks: (not case sensitive)
         0. manage emalia: [Emalia Instance Name]/0 [command]: various command to manage emalia
         1. read file: READ/1 [PATH]: zip if directory
         2. write file: WRITE/2 [(optional)PATH to directory] + attachment list: write all to a directory (auto create if DNE)
         3. make request: REQUEST/3 [Method] // [URL] // [HEADER] // [BODY]: enter None for a field that is not needed, result will be returned
         4. execute powershell: SHELL/POWERSHELL/4 [command]: (DANGER) run powershell command
         5. execute python: PYTHON/5 [code]: (DANGER) run python in-process
+        6. email action: EMAIL/6 [action]: perform actions like send or forward new email 
         
         9. custom tasks: CUSTOM/9 [task]: store custom tasks, one can run with their custom command
-
     """
     instance_name:str = "Emalia" # name of the service robot, Emalia is her default name
     server_start_time:datetime = None # tracks the start time of last server
@@ -145,11 +134,11 @@ class Emalia():
         pass
     
     def _store_custom_task(self, task):
-        """user can store custom tasks (nest multiple or define new)
+        """9 user can store custom tasks (nest multiple or define new)
         """
         
     def _run_custom_task(self, name):
-        """run user stored custom tasks 
+        """? run user stored custom tasks 
         """
     
 if __name__ == "__main__":
