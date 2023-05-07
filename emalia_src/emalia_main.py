@@ -51,7 +51,7 @@ class Emalia():
         self.PID = os.getpid()
         self.email_handler = EmailManager.EmailManager(HANDLER_PASSWORD=HANDLER_PASSWORD, HANDLER_EMAIL=HANDLER_EMAIL, HANDLER_SMTP=HANDLER_SMTP, HANDLER_IMAP=HANDLER_IMAP)
         
-    def main_loop(self, scan_interval:float=5):
+    def main_loop(self, scan_interval:float=5.0):
         """Start the email listener
         @param `scan_interval:float` the time to pause between each email scan session, if processing tie (request time >= scan_interval, there will be no pause)
         @return `:datetime.datetime` time of main_loop completion
@@ -61,17 +61,25 @@ class Emalia():
         self.running = True
         self.server_start_time = datetime.datetime.now()
         # infinity loop unless self.running is changed in loop or from other functions in separate process
+        self.statistics = {"sent": 0, "received": 0}
         while self.running:
             loop_start_time = datetime.datetime.now()
             time.sleep(scan_interval)
             #print(self.email_handler.fetch_unread_email(1, False))
-            print(ue:=self.email_handler.unseen_email())
-            print(self.email_handler.fetch_email(ue[0]))
+            print(unseen_email_ids:=self.email_handler.unseen_emails())
+            unseen_email_body = self.email_handler.fetch_email(unseen_email_ids[0])
+            unseen_email_parsed = self.email_handler.parse_email(unseen_email_body)
+            print(unseen_email_parsed["body"])
+            # test reply
+            if self.statistics["sent"] == 0 and False:
+                self.email_handler.send_email(unseen_email_parsed["sender"], "Reply: " + unseen_email_parsed["subject"], "Reply: " + unseen_email_parsed["sender"])
+                self.statistics["sent"] += 1
+                print("sent email")
             loop_end_time = datetime.datetime.now()
-            loop_time = (loop_end_time.second - loop_start_time.second)
+            loop_time = (loop_end_time - loop_start_time).total_seconds()
             if (scan_interval - loop_time) > 0:
                 time.sleep(scan_interval - loop_time)
-            print(scan_interval - loop_time)
+            print((scan_interval - loop_time))
         # return server completion time
         return datetime.datetime.now()
         
