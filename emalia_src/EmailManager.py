@@ -11,28 +11,14 @@ from email.message import Message
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 import mimetypes
-""" An email manager class that scan, read and reply to email easily
-Time analysis (second):
-imap
-login ~ 1
-select mainbox ~ 0.2
-search ~ 0.2
-fetch ~ 0.2/email
 
-smtp
-login ~ 1
-send ~ 0.3
-
-Combined
-unseen_emails ~ 1.7
-fetch_email ~ 1.7/email
-parse ~ 0
-label ~ 1+0.3/email
-"""
 
 # Set up IMAP connection to read emails
 class EmailManager(): 
-    """ A GS email manager
+    """ An email manager class that scan, read and reply to emails
+    Time analysis (second): imap: login ~ 1select, mainbox ~ 0.2, search ~ 0.2, fetch ~ 0.2/email
+    smtp: login ~ 1, send ~ 0.3
+    Combined: unseen_emails ~ 1.7, fetch_email ~ 1.7/email, parse ~ 0,label ~ 1+0.3/email
     TODO: support reply to emails
     TODO: support passwording
     TODO: support saving attachments
