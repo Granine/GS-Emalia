@@ -7,6 +7,28 @@ from email import message_from_bytes
 import os
 import pathlib
 import re
+from email.message import Message
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
+import mimetypes
+""" An email manager class that scan, read and reply to email easily
+Time analysis (second):
+imap
+login ~ 1
+select mainbox ~ 0.2
+search ~ 0.2
+fetch ~ 0.2/email
+
+smtp
+login ~ 1
+send ~ 0.3
+
+Combined
+unseen_emails ~ 1.7
+fetch_email ~ 1.7/email
+parse ~ 0
+label ~ 1+0.3/email
+"""
 
 # Set up IMAP connection to read emails
 class EmailManager(): 
@@ -73,6 +95,24 @@ class EmailManager():
             unseen_email_ids = [s.decode() for s in response[0].split()]
         return unseen_email_ids
     
+    def add_attachment(self, message:MIMEMultipart, attachment_path:str):
+        # Ensure the message is a MIMEMultipart object
+        if not isinstance(message, MIMEMultipart):
+            raise AttributeError("message must be MIMEMultipart type")
+        # Make sure the file exists
+        if not os.path.isfile(attachment_path):
+            raise FileNotFoundError(f"{attachment_path} not found")
+
+        # fetch file
+        with open(attachment_path, "rb") as attachment_f:
+            attachment_data = attachment_f.read()
+
+        mime_attachment = MIMEApplication(bytes(attachment_data), Name=os.path.basename(attachment_path))
+        mime_attachment.add_header("Content-Disposition", f"attachment; filename={os.path.basename(attachment_path)}")
+        message.attach(mime_attachment)
+
+        return message
+    
     def fetch_email(self, email_id:int, mark_read:bool=True)->Message:
         with imaplib.IMAP4_SSL(**self.HANDLER_IMAP) as imap:
             imap.login(self.HANDLER_EMAIL, self.HANDLER_PASSWORD)
@@ -91,22 +131,28 @@ class EmailManager():
                 imap.store(email_id, "-FLAGS", "\\Seen")
         return parsed_email
     
-    def send_email(self, target_email:str, email_subject:str, email_body:str="")->Message:
+    def send_email(self, target_email:str, email_subject:str, email_body:str="", attachments:list=[], body_type="TEXT/PLAIN")->Message:
         """Send a email to target email
         @param `target_email:str` to whom the email will be sent
         @param `email_subject:str` subject of email to send
         @param `email_body:str` body of the email
+        @param `attachments:list of str or path` for each path here, attempt to read and attach file
         @return `:Message` outgoing email
         TODO: support attachments
         """
         # Create response email
-        outgoing_email = Message()
-        outgoing_email.set_type("TEXT/ENRICHED")
+        outgoing_email = MIMEMultipart()
         outgoing_email["From"] = self.HANDLER_EMAIL
         outgoing_email["To"] = target_email
         outgoing_email["Subject"] = email_subject
-        outgoing_email.set_payload(email_body)
-
+        body = Message()
+        body.set_type(body_type)
+        body.set_payload(email_body)
+        outgoing_email.attach(body)
+        # handle payload
+        for attachment in attachments:
+            # will modify attachment
+            self.add_attachment(outgoing_email, attachment)
         # Send the response email
         with smtplib.SMTP_SSL(**self.HANDLER_SMTP) as server:
             server.login(self.HANDLER_EMAIL, self.HANDLER_PASSWORD)
@@ -140,12 +186,6 @@ class EmailManager():
                 email = BytesParser(policy=default).parsebytes(raw_email)
                 email = message_from_bytes(raw_email)
                 unread_emails_list.append([unread_email_id, email])
-                # for some reason BODY.PEEK[] does not work, so label as seen/unseen
-                if mark_read:
-                    # Mark the email as read
-                    imap.store(unread_email_id, "+FLAGS", "\\Seen")
-                else:
-                    imap.store(unread_email_id, "-FLAGS", "\\Seen")
         return unread_emails_list
     
     def mark_emails(self, target:int|list|str, action:str="+FLAGS", flag:str="\\Seen")->list[str]:
