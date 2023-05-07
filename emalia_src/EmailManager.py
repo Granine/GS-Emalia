@@ -1,12 +1,14 @@
 import imaplib
 import smtplib
 from email.mime.text import MIMEText
+from email.contentmanager import ContentManager
 from email.parser import BytesParser
 from email.policy import default
 from email.message import Message
 from email import message_from_bytes
 import os
 import pathlib
+import re
 
 # Set up IMAP connection to read emails
 class EmailManager(): 
@@ -58,7 +60,7 @@ class EmailManager():
         with imaplib.IMAP4_SSL(**self.HANDLER_IMAP) as test:
             pass
         
-    def unseen_email(self):
+    def unseen_emails(self):
         """Return a list of unseen email ids
         @return `:list` of unseen email ids
         """
@@ -91,25 +93,29 @@ class EmailManager():
                 imap.store(email_id, "-FLAGS", "\\Seen")
         return parsed_email
     
-    def send_email(self, target_email:str, email_subject:str, email_body:str=""):
+    def send_email(self, target_email:str, email_subject:str, email_body:str="")->Message:
         """Send a email to target email
         @param `target_email:str` to whom the email will be sent
         @param `email_subject:str` subject of email to send
         @param `email_body:str` body of the email
+        @return `:Message` outgoing email
         TODO: support attachments
         """
         # Create response email
-        outgoing_email = MIMEText(email_body)
+        outgoing_email = Message()
+        outgoing_email.set_type("TEXT/ENRICHED")
         outgoing_email["From"] = self.HANDLER_EMAIL
         outgoing_email["To"] = target_email
         outgoing_email["Subject"] = email_subject
+        outgoing_email.set_payload(email_body)
 
         # Send the response email
         with smtplib.SMTP_SSL(**self.HANDLER_SMTP) as server:
             server.login(self.HANDLER_EMAIL, self.HANDLER_PASSWORD)
             server.send_message(outgoing_email)
+        return outgoing_email
             
-    def fetch_unread_email(self, count:int, mark_read:bool=True)->list:
+    def fetch_unread_emails(self, count:int, mark_read:bool=True)->list:
         """ Fetch unread emails and body by count number
         @param `count:int` Number of latest unread to fetch, <0 for all
         @param `mark_read:bool` if true, mark fetched email as "\seen"
@@ -144,7 +150,7 @@ class EmailManager():
                     imap.store(unread_email_id, "-FLAGS", "\\Seen")
         return unread_emails_list
     
-    def mark_email(self, target:int|list|str, action:str="+FLAGS", flag:str="\\Seen")->list[str]:
+    def mark_emails(self, target:int|list|str, action:str="+FLAGS", flag:str="\\Seen")->list[str]:
         """  Mark target emails with flag based on action
         @param `target:int|list|str`
           if int: the x most recent email to label in inbox
@@ -190,12 +196,13 @@ class EmailManager():
     def parse_email(self, email:Message)->dict:
         """Parse a Message format email into simple, clean dict while downloading attachments
         @param `email:Message` the email to parse
-        @return `:dict` with keys "Body", "Return-Path", "Received", "Date", "From", "Subject", "Sender", "To", "cc", "attachments:list of path"
+        @return `:dict` with keys "body", "return_path", "received", date", "from", "subject", "sender", "to", "cc", "attachments:list of path"
         """
         def clean(text):
             # clean text for creating a folder
             return "".join(c if c.isalnum() else "_" for c in text)
         body = ""
+        attachments = []
         if email.is_multipart():
             for part in email.walk():
                 content_type = part.get_content_type()
@@ -219,16 +226,22 @@ class EmailManager():
                         open(filepath, "wb").write(part.get_payload(decode=True))
         else:
             body = email.get_payload(decode=True).decode()
-            
+        if email["Sender"]:
+            sender = email["Sender"]  
+        elif "<" in email["From"] and ">" in email["From"]:
+            sender = re.search("<.*?>", email["From"]).group(0)
+        else:
+            sender = None
         return {
-            "Body": body, 
-            "Return-Path": email["Return-Path"], 
-            "Received": email["Received"], 
-            "Date": email["Date"],  
-            "From": email["From"],  
-            "Subject": email["Subject"],  
-            "Sender": email["Sender"],
-            "To": email["To"], 
-            "cc": email["cc"]
+            "body": body, 
+            "return-Path": email["Return-Path"], 
+            "received": email["Received"], 
+            "date": email["Date"],  
+            "from": email["From"],  
+            "subject": email["Subject"],  
+            "sender": sender,
+            "to": email["To"], 
+            "cc": email["cc"],
+            "attachments": attachments
         }
         
