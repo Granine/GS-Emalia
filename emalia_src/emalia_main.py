@@ -119,7 +119,6 @@ class Emalia():
             3: self._action_make_request,
             4: self._action_execute_powershell,
             5: self._action_execute_python,
-            6: self._action_m,
             9: self._action_register_custom_task
         }
         return default_worker_functions.update(self.custom_tasks)
