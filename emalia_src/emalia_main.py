@@ -37,11 +37,9 @@ class Emalia():
     server_running:bool = False # if True, a server is running, set to false will stop server at next loop
     freeze_server:bool = False # if True, will temporarily stop tasks execution except emalia_manager. 
     statistics:dict = {"sent": None, "received": None} # track statistics for current/last running instance, {"sent":int, "received":int}
-    permission = {}
+    permission = {} # holds information regarding what the user can/cannot access
+    vip_list = {} # a list of senders with special permission
     custom_tasks = {} # user defined tasks on the run
-    
-    
-    # for worker function setting section see section "WORKER FUNCTIONS"
     # =====================Configurable Settings=========================
     # should not be changed mid-execution or may error out
     _max_response_per_cycle = 3
