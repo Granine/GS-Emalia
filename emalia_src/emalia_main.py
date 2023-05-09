@@ -210,8 +210,10 @@ class Emalia():
         response_email_body = main_menu
         return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
     
-    def _action_read_file(self, email_received:Message, path:str="")->Message:
-        """1 read the content of a file by emalia permission adn return it
+    def _action_read_file(self, email_received:Message)->Message:
+        """1 find one file and attach it as attachment to response email by emalia permission and return it
+        @param `email_received:Message` the email sent by sender
+        @return `:Message` the response email to sender
         """
         main_menu = """Options"""
         path = email_received["body"].split(" ", 1)[1]
@@ -270,6 +272,7 @@ class Emalia():
 
     
 if __name__ == "__main__":
+    """Allow one button trigger of emalia mainloop, testing for now, may change to terminal configurable later"""
     #TODO support comamndline trigger of emalia_main.py
     emalia_instance = Emalia()
     print("PID:" + str(emalia_instance.PID))
@@ -278,7 +281,7 @@ if __name__ == "__main__":
     main_loop_thread.start()
     # exit emalia and external controls
     supported_command = ["stop"]
-    while selection:=input("Command: ") not in supported_command:
+    while selection:=input("Command:\n") not in supported_command:
         print(f"Input {selection} is not a valid command from list: {supported_command}")
     emalia_instance.break_loop()
     main_loop_thread.join()
