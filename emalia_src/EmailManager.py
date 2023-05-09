@@ -1,17 +1,20 @@
-import imaplib
-import smtplib
-from email.parser import BytesParser
-from email.policy import default
-from email.message import Message
-from email import message_from_bytes
 import os
 import pathlib
-import re
+# email action
+import imaplib
+import smtplib
 from email.message import Message
+# email parsing
+import re
+from email.parser import BytesParser
+from email import message_from_bytes
+# for email formatting
+from email.policy import default
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
-import mimetypes
-
+# for zip file
+import zipfile
+from io import BytesIO
 
 # Set up IMAP connection to read emails
 class EmailManager(): 
@@ -86,13 +89,27 @@ class EmailManager():
         if not isinstance(message, MIMEMultipart):
             raise AttributeError("message must be MIMEMultipart type")
         # Make sure the file exists
-        if not os.path.isfile(attachment_path):
+        if not os.path.exists(attachment_path):
             raise FileNotFoundError(f"{attachment_path} not found")
-
-        # fetch file
-        with open(attachment_path, "rb") as attachment_f:
-            attachment_data = attachment_f.read()
-
+        # raw file, directly attachment
+        if os.path.isfile(attachment_path):
+            with open(attachment_path, "rb") as attachment_f:
+                attachment_data = attachment_f.read()
+        # directory, zip first
+        elif os.path.isdir(attachment_path):
+            # Create the zip file
+            buffer = BytesIO()
+            with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zipped_file:
+                # get each file for zipping
+                for root, dirs, files in os.walk(attachment_path):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        zipped_file.write(file_path, os.path.relpath(file_path, dirs))
+            buffer.seek(0)
+            attachment_data = buffer.getvalue()
+        else:
+            raise AttributeError(f"{attachment_path} is an invalid file type")
+            
         mime_attachment = MIMEApplication(bytes(attachment_data), Name=os.path.basename(attachment_path))
         mime_attachment.add_header("Content-Disposition", f"attachment; filename={os.path.basename(attachment_path)}")
         message.attach(mime_attachment)
@@ -102,23 +119,21 @@ class EmailManager():
     def fetch_email(self, email_id:int, mark_read:bool=True)->Message:
         with imaplib.IMAP4_SSL(**self.HANDLER_IMAP) as imap:
             imap.login(self.HANDLER_EMAIL, self.HANDLER_PASSWORD)
-            imap.select("inbox", readonly=True)
-            email_status, email_content = imap.fetch(email_id, "(BODY.PEEK[])")
+            imap.select("inbox")
+            if mark_read:
+                email_status, email_content = imap.fetch(email_id, "(BODY[])")
+            else:
+                email_status, email_content = imap.fetch(email_id, "(BODY.PEEK[])")
             if email_status.lower() != "ok":
                 raise ConnectionError(f"Cannot fetch email {email_id}")
+            # basic parsing to Message
             raw_email = email_content[0][1]
             parsed_email = BytesParser(policy=default).parsebytes(raw_email)
             parsed_email = message_from_bytes(raw_email)
-            # for some reason BODY.PEEK[] does not work, so label as seen/unseen
-            if mark_read:
-                # Mark the email as read
-                imap.store(email_id, "+FLAGS", "\\Seen")
-            else:
-                imap.store(email_id, "-FLAGS", "\\Seen")
         return parsed_email
     
-    def send_email(self, target_email:str, email_subject:str, email_body:str="", attachments:list=[], body_type="TEXT/PLAIN")->Message:
-        """Send a email to target email
+    def new_email(self, target_email:str, email_subject:str, email_body:str="", attachments:list=[], main_body_type="TEXT/PLAIN")->Message:
+        """Prepare a new email
         @param `target_email:str` to whom the email will be sent
         @param `email_subject:str` subject of email to send
         @param `email_body:str` body of the email
@@ -132,7 +147,7 @@ class EmailManager():
         outgoing_email["To"] = target_email
         outgoing_email["Subject"] = email_subject
         body = Message()
-        body.set_type(body_type)
+        body.set_type(main_body_type)
         body.set_payload(email_body)
         outgoing_email.attach(body)
         # handle payload
@@ -140,10 +155,27 @@ class EmailManager():
             # will modify attachment
             self.add_attachment(outgoing_email, attachment)
         # Send the response email
+        return outgoing_email
+        
+    def send_email(self, outgoing_email:Message, target_email:str="")->Message:
+        """Send a email to target email
+        @param `outgoing_email:Message` email to send
+        @param `target_email:str` the email address to send email, replace if provided. Will directly modify original
+        @return `outgoing_email:str` return the outgoing email 
+        Please prepare email with new_email()
+        """
+        # if target_email provided
+        if target_email:
+            outgoing_email["To"] = target_email
+        # if target email DNE
+        if not outgoing_email["To"]:
+            raise AttributeError("Outgoing email do not have a valid receiver")
+        # sending !
         with smtplib.SMTP_SSL(**self.HANDLER_SMTP) as server:
             server.login(self.HANDLER_EMAIL, self.HANDLER_PASSWORD)
             server.send_message(outgoing_email)
         return outgoing_email
+        
             
     def fetch_unread_emails(self, count:int, mark_read:bool=True)->list:
         """ Fetch unread emails and body by count number
@@ -153,7 +185,7 @@ class EmailManager():
         """
         with imaplib.IMAP4_SSL(**self.HANDLER_IMAP) as imap:
             imap.login(self.HANDLER_EMAIL, self.HANDLER_PASSWORD)
-            imap.select("inbox", readonly=True)
+            imap.select("inbox") #, readonly=True
 
             # Search for all unread emails
             search_status, response = imap.search(None, "UNSEEN")
@@ -165,7 +197,13 @@ class EmailManager():
             # fetch and record each email by ID
             for unread_email_id in unread_emails_ids:
                 unread_email_id = unread_email_id.decode()
-                unread_email_status, unread_email = imap.fetch(unread_email_id, "(BODY.PEEK[])") # or RFC822
+                # make read of not
+                if mark_read:
+                    unread_email_status, unread_email = imap.fetch(unread_email_id, "(BODY[])") # or RFC822
+                else:
+                    unread_email_status, unread_email = imap.fetch(unread_email_id, "(BODY.PEEK[])")
+                
+                # check fetch is success
                 if unread_email_status.lower() != "ok":
                     raise ConnectionError(f"Cannot fetch email {unread_email_id}: {unread_email}")
                 raw_email = unread_email[0][1]
@@ -257,8 +295,8 @@ class EmailManager():
         else:
             sender = None
         return {
-            "body": body, 
-            "return-Path": email["Return-Path"], 
+            "body": body.strip(), 
+            "return-path": email["Return-Path"], 
             "received": email["Received"], 
             "date": email["Date"],  
             "from": email["From"],  
@@ -269,3 +307,8 @@ class EmailManager():
             "attachments": attachments
         }
         
+    def assert_valid_email_received(self, parsed_email):
+        """Assert and email have necessary component for responding"""
+        assert parsed_email["sender"] or parsed_email["return_path"]
+        assert parsed_email["subject"]
+        assert isinstance(parsed_email["body"], str)
