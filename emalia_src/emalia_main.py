@@ -4,6 +4,11 @@ import threading
 import time
 from datetime import datetime
 import os
+from email.message import Message # email template
+import re
+import logging
+import traceback
+import sys
 
 class Emalia():
     """an email interacted system that manages and perform a list of predefined tasks.
@@ -16,7 +21,7 @@ class Emalia():
     Emalia Response Email Structure:
         body: [response] [potential next step command(s)] [footer] + [attachments]
     Supported tasks: (not case sensitive)
-        0. manage emalia: [Emalia Instance Name]/0 [command]: various command to manage emalia
+        0. manage emalia: MANAGE/[Emalia Instance Name]/0 [command]: various command to manage emalia
         1. read file: READ/1 [PATH]: zip if directory
         2. write file: WRITE/2 [(optional)PATH to directory] + attachment list: write all to a directory (auto create if DNE)
         3. make request: REQUEST/3 [Method] // [URL] // [HEADER] // [BODY]: enter None for a field that is not needed, result will be returned
@@ -26,16 +31,29 @@ class Emalia():
         
         9. custom tasks: CUSTOM/9 [task]: store custom tasks, one can run with their custom command
     """
+    # ==================Hot-edit Options==========================
+    # can modify anytime, even externally
     instance_name:str = "Emalia" # name of the service robot, Emalia is her default name
-    server_start_time:datetime = None # tracks the start time of last server
     server_running:bool = False # if True, a server is running, set to false will stop server at next loop
-    max_send_count = 0 # max email emalia can send per instance, <0 for infinite
+    freeze_server:bool = False # if True, will temporarily stop tasks execution except emalia_manager. 
     statistics:dict = {"sent": None, "received": None} # track statistics for current/last running instance, {"sent":int, "received":int}
     permission = {}
     custom_tasks = {} # user defined tasks on the run
-    # for worker function setting section see section "WORKER FUNCTIONS"
     
-    def __init__(self, permission:str="default", HANDLER_EMAIL:str="", HANDLER_PASSWORD:str="", HANDLER_SMTP:str|dict="smtp.gmail.com", HANDLER_IMAP:str|dict="imap.gmail.com"):
+    
+    # for worker function setting section see section "WORKER FUNCTIONS"
+    # =====================Configurable Settings=========================
+    # should not be changed mid-execution or may error out
+    _max_response_per_cycle = 3
+    _max_send_count = 1 # max email emalia can send per instance, <0 for infinite
+    _file_roots = f"{__file__}/../../" # should point to GS-Emalia directory
+    # =====================Runtime Variable=========================
+    # do not change unless confident
+    server_start_time:datetime = None # tracks the start time of last server
+    logger = None
+
+    
+    def __init__(self, permission:str="default", HANDLER_EMAIL:str="", HANDLER_PASSWORD:str="", HANDLER_SMTP:str|dict="smtp.gmail.com", HANDLER_IMAP:str|dict="imap.gmail.com", logger:logging.Logger=None):
         """Create a email service robot instance. Make sure you run mainloop to start service
         @param permission (str, optional): What Emalia is allowed to do to local file
             {"action": ACTION, range": RANGE}
@@ -61,6 +79,13 @@ class Emalia():
             self.permission = permission
         else:
             raise AttributeError("Unknown permission value")
+        if not logger:
+            self.logger = logging.Logger(name=__file__, level=logging.INFO)
+            console_handler = logging.StreamHandler(sys.stdout)
+            console_handler.setLevel(logging.INFO)
+            self.logger.addHandler(console_handler)
+        else:
+            self.logger = logger
         self.PID = os.getpid()
         self.email_handler = EmailManager(HANDLER_PASSWORD=HANDLER_PASSWORD, HANDLER_EMAIL=HANDLER_EMAIL, HANDLER_SMTP=HANDLER_SMTP, HANDLER_IMAP=HANDLER_IMAP)
         
@@ -77,22 +102,57 @@ class Emalia():
         self.statistics = {"sent": 0, "received": 0}
         while self.server_running:
             loop_start_time = datetime.now()
-            #print(self.email_handler.fetch_unread_email(1, False))
-            print(unseen_email_ids:=self.email_handler.unseen_emails())
-            unseen_email_body = self.email_handler.fetch_email(unseen_email_ids[0])
-            unseen_email_parsed = self.email_handler.parse_email(unseen_email_body)
-            print(unseen_email_parsed["body"])
-            # test reply
-            if self.statistics["sent"] < self.max_sent_count or self.max_sent_count <= 0:
-                self.email_handler.send_email(unseen_email_parsed["sender"], "Reply: " + unseen_email_parsed["subject"], "sample body", attachments=[])
-                self.statistics["sent"] += 1
-                print(f"Sent email to {unseen_email_parsed['sender']}")
+            try:
+                # get unseen_emails
+                unseen_email_ids = self.email_handler.unseen_emails()
+                # fetch email by id
+                
+                if unseen_email_ids:
+                    unseen_email_id_selected = unseen_email_ids[0]
+                    unseen_email = self.email_handler.fetch_email(unseen_email_id_selected)
+                    unseen_email_parsed = self.email_handler.parse_email(unseen_email)
+                    self.email_handler.assert_valid_email_received(unseen_email_parsed)
+                else:
+                    unseen_email = None
+                    unseen_email_parsed = None
+            except Exception as err:
+                self.logger.exception("Error when attempting to fetch new emails")
+                unseen_email = None
+                unseen_email_parsed = None
+                
+            # handle user request if new email detected
+            if unseen_email:
+                try:
+                    user_command = re.search("^\w*", unseen_email_parsed["body"]).group()
+                    # if server freeze, force all command to system manager
+                    if self.freeze_server:
+                        response_email = self.task_list[0]["function"](unseen_email_parsed)
+                    elif user_command in self.task_list.keys():
+                        response_email = self.task_list[user_command]["function"](unseen_email_parsed)
+                    else:
+                        response_email = self._new_emalia_email(unseen_email_parsed, f"Error: Unknown command {user_command}")
+                except Exception as err:
+                    self.logger.exception(f"Error: {user_command} failed")
+                    response_email = self._new_emalia_email(unseen_email_parsed, f"Error: {err}", traceback.format_exc())
+                # freeze if conditions not met
+                if (self.statistics["sent"] >= self._max_send_count) and (self._max_send_count >= 0):
+                    self.freeze_server = True
+                # reply based on action
+                try:
+                    self.email_handler.send_email(response_email)
+                    self.statistics["sent"] += 1
+                    self.logger.info(f"Sent email to {unseen_email_parsed['sender']}")
+                        
+                except Exception as err:
+                    self.logger.exception("Error when attempting send email")
+                
             # calculate and sleep for desired scan_interval - current loop_time
             loop_end_time = datetime.now()
             loop_time = (loop_end_time - loop_start_time).total_seconds()
             if (scan_interval - loop_time) > 0:
                 time.sleep(scan_interval - loop_time)
-            print("Loop time" + str(loop_time))
+            self.logger.info(f"Loop time: {loop_time}")
+
         # return server completion time
         return datetime.now()
         
@@ -100,66 +160,110 @@ class Emalia():
         """Stop the execution of mainloop externally
         Repeated call have no effect"""
         self.server_running = False
-        
+    
+    # ========================== WORKER FUNCTIONs =========================
     def _validate_password(password):
         """Check if a user provided password is the save as record
         """
         pass
     
-    # ========================== WORKER FUNCTIONs =========================
+    def _new_emalia_email(self, email_received:Message, email_subject:str, email_body:str="", attachments:list=[]):
+        """Prepare emalia format email
+        TODO add footer to body
+        """
+        target_email = email_received["sender"]
+        email_body = email_body
+        return self.email_handler.new_email(target_email=target_email, email_subject=email_subject, email_body=email_body, attachments=attachments)
     
     
     @property
     def task_list(self):
-        """Worker function list and access keys"""
+        """Worker function list and access keys
+        TODO: Redesign task_list so it is more concise
+        """
         default_worker_functions = {
-            0: self._action_manage_emalia,
-            1: self._action_read_file,
-            2: self._action_write_file,
-            3: self._action_make_request,
-            4: self._action_execute_powershell,
-            5: self._action_execute_python,
-            9: self._action_register_custom_task
+            "0": {"function": self._action_manage_emalia, 
+                "name":"System Settings", "trigger": ["0", "manage", f"{self.instance_name}"], "description": "Edit system settings and trigger system commands", "help": ""},
+            "1": {"function": self._action_read_file,
+                "name":"Get File", "trigger": ["1", "read"], "description": "Search and return a file as attachment", "help": ""},
+            "2": {"function": self._action_write_file,
+                "name":"Write File", "trigger": ["2", "write"], "description": "Store an email attachment as file", "help": ""},
+            "3": {"function": self._action_make_request,
+                "name":"HTTP Request", "trigger": ["3", "request"], "description": "Make a http request and get the response", "help": ""},
+            "4": {"function": self._action_execute_powershell,
+                "name":"Execute Powershell", "trigger": ["4", "shell", "powershell"], "description": "Run a powershell script", "help": ""},
+            "5": {"function": self._action_execute_python,
+                "name":"Execute Python", "trigger": ["5", "python"], "description": "Run a python script in line", "help": ""},
+            "6": {"function": self._action_execute_python,
+                "name":"Email Action", "trigger": ["6", "email"], "description": "Manage and perform email related actions", "help": ""},
+            "9": {"function": self._action_register_custom_task,
+                "name":"Custom Tasks", "trigger": ["9", "custom"], "description": "Store a new user defined task chian", "help": ""}
         }
-        return default_worker_functions.update(self.custom_tasks)
+        default_worker_functions.update(self.custom_tasks)
+        return default_worker_functions
         
-    def _action_manage_emalia(self, emalia_command):
+    def _action_manage_emalia(self, email_received:Message, emalia_command:str=""):
         """0 Alter emalia behaviour by emalia permission
         """
-        pass
-        
-    def _action_read_file(self, path:str):
-        """1 read the content of a file by emalia permission
-        """
-        pass
+        main_menu = """Options"""
+        response_email_subject = f"MANAGE: complete"
+        response_email_body = main_menu
+        return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
     
-    def _action_write_file(self, content:bytes, path:str="DEFAULT"):
+    def _action_read_file(self, email_received:Message, path:str="")->Message:
+        """1 read the content of a file by emalia permission adn return it
+        """
+        main_menu = """Options"""
+        path = email_received["body"].split(" ", 1)[1]
+        if path:
+            if os.path.exists(path):
+                searched_path = path
+            elif searched_path:=FileManager.search_exact(path, path=self._file_roots, ignore_type=True, exception=False):
+                pass
+            elif searched_path:=FileManager.search_exact(path, path=self._file_roots, ignore_type=False, exception=False):
+                pass
+            else:
+                raise AttributeError(f"{path} does not exist")
+            # after absolute path found, return email as attachment
+            path = os.path.realpath(searched_path)
+            path_name = os.path.basename(path)
+            response_email_subject = f"READ: {path_name} complete"
+            response_email_body = f"{path_name} found at {path}"
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
+        else:
+            # return main options
+            response_email_subject = f"READ: Main Menu"
+            response_email_body = main_menu
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
+                    
+    
+    def _action_write_file(self, email_received:Message, content:bytes, path:str="DEFAULT"):
         """2 write the content of a file by emalia permission
         """
         pass
         
-    def _action_make_request(self, http_method, http_url, http_header, http_body):
+    def _action_make_request(self, email_received:Message, http_method, http_url, http_header, http_body):
         """3 make an external request by emalia permission
         """
         pass
     
-    def _action_execute_powershell(self, command):
+    def _action_execute_powershell(self, email_received:Message, command):
         """4 Execute a powershell command by emalia permission
         """
         pass
     
-    def _action_execute_python(self, python):
+    def _action_execute_python(self, email_received:Message, python):
         """5 Execute a python script in current process by emalia permission
         """
         pass
     
-    def _action_register_custom_task(self, task):
+    def _action_register_custom_task(self, email_received:Message, task):
         """9 user can store custom tasks (nest multiple or define new)
         """
         self.custom_tasks = {}
         pass
         
-    def _action_run_custom_task(self, name):
+    def _action_run_custom_task(self, email_received:Message, name):
         """? run user stored custom tasks 
         """
         pass
