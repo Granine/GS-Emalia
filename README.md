@@ -40,22 +40,25 @@ The process responsible for email management like reading email, sending email
     - (o) EmailManager
       - (o) attachments r/s
     - (1/2) Basic test structure
-    - () Basic FileManager functionality
+    - (o) Basic FileManager functionality
       - (o) calculate file distance (depth wise)
       - (o) search files
-      - () safe file delete
-    - () Worker functions (0-5)
-    - () Task distribution system
+    - (1/5) Worker functions (0-5)
+    - (o) Task distribution system (need improvements for more entry keyword support)
     - () Security
       - () enable/disable functions
-    - () Save the current conversation chain to a file
-    - () Maintain conversation
+    - () Attach basic footer to emails
 - Stage Piston 
+    - () Maintain conversation
+      - () have the ability to read response
     - () Security
-        - () Support password
-        - () Support file access range
-        - () Email white/black list
-        - () Worker fucntions (0-1)
+      - () Support password
+      - () Support file access range
+      - () Email white/black list
+      - () Worker functions (6, 9)
+    - () Basic FileManager functionality
+      - () safe file delete
+    - () Save the current conversation chain to a file
     - () Read history emails conversation (local save)
 - Version 0.0.1
     - () Basic UI
