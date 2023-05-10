@@ -45,6 +45,7 @@ class Emalia():
     _max_response_per_cycle = 3
     _max_send_count = 1 # max email emalia can send per instance, <0 for infinite
     _file_roots = f"{__file__}/../../" # should point to GS-Emalia directory
+    _save_path = f"{__file__}/../../history.csv" # a history file with .csv extension, create if DNE 
     # =====================Runtime Variable=========================
     # do not change unless confident
     server_start_time:datetime = None # tracks the start time of last server
@@ -100,6 +101,7 @@ class Emalia():
         self.statistics = {"sent": 0, "received": 0}
         while self.server_running:
             loop_start_time = datetime.now()
+            response_email = None
             try:
                 # get unseen_emails
                 unseen_email_ids = self.email_handler.unseen_emails()
@@ -121,6 +123,9 @@ class Emalia():
             # handle user request if new email detected
             if unseen_email:
                 try:
+                    # save email
+                    self.email_handler.store_email_to_csv(unseen_email_parsed, self._save_path, "received"  )
+                    # parse command
                     user_command = re.search("^\w*", unseen_email_parsed["body"]).group()
                     # if server freeze, force all command to system manager
                     if self.freeze_server:
@@ -132,7 +137,8 @@ class Emalia():
                 except Exception as err:
                     self.logger.exception(f"Error: {user_command} failed")
                     response_email = self._new_emalia_email(unseen_email_parsed, f"Error: {err}", traceback.format_exc())
-                # freeze if conditions not met
+            if unseen_email or response_email:
+            # freeze if conditions not met
                 if (self.statistics["sent"] >= self._max_send_count) and (self._max_send_count >= 0):
                     self.freeze_server = True
                 # reply based on action
@@ -165,14 +171,13 @@ class Emalia():
         """
         pass
     
-    def _new_emalia_email(self, email_received:Message, email_subject:str, email_body:str="", attachments:list=[]):
+    def _new_emalia_email(self, email_received:dict, email_subject:str, email_body:str="", attachments:list=[]):
         """Prepare emalia format email
         TODO add footer to body
         """
         target_email = email_received["sender"]
         email_body = email_body
         return self.email_handler.new_email(target_email=target_email, email_subject=email_subject, email_body=email_body, attachments=attachments)
-    
     
     @property
     def task_list(self):
@@ -200,7 +205,7 @@ class Emalia():
         default_worker_functions.update(self.custom_tasks)
         return default_worker_functions
         
-    def _action_manage_emalia(self, email_received:Message, emalia_command:str=""):
+    def _action_manage_emalia(self, email_received:dict, emalia_command:str=""):
         """0 Alter emalia behaviour by emalia permission
         """
         main_menu = """Options"""
@@ -208,10 +213,10 @@ class Emalia():
         response_email_body = main_menu
         return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
     
-    def _action_read_file(self, email_received:Message)->Message:
+    def _action_read_file(self, email_received:dict)->Message:
         """1 find one file and attach it as attachment to response email by emalia permission and return it
-        @param `email_received:Message` the email sent by sender
-        @return `:Message` the response email to sender
+        @param `email_received:dict` the email sent by sender
+        @return `:dict` the response email to sender
         """
         main_menu = """Options"""
         path = email_received["body"].split(" ", 1)[1]
@@ -237,33 +242,33 @@ class Emalia():
             return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
                     
     
-    def _action_write_file(self, email_received:Message, content:bytes, path:str="DEFAULT"):
+    def _action_write_file(self, email_received:dict, content:bytes, path:str="DEFAULT"):
         """2 write the content of a file by emalia permission
         """
         pass
         
-    def _action_make_request(self, email_received:Message, http_method, http_url, http_header, http_body):
+    def _action_make_request(self, email_received:dict, http_method, http_url, http_header, http_body):
         """3 make an external request by emalia permission
         """
         pass
     
-    def _action_execute_powershell(self, email_received:Message, command):
+    def _action_execute_powershell(self, email_received:dict, command):
         """4 Execute a powershell command by emalia permission
         """
         pass
     
-    def _action_execute_python(self, email_received:Message, python):
+    def _action_execute_python(self, email_received:dict, python):
         """5 Execute a python script in current process by emalia permission
         """
         pass
     
-    def _action_register_custom_task(self, email_received:Message, task):
+    def _action_register_custom_task(self, email_received:dict, task):
         """9 user can store custom tasks (nest multiple or define new)
         """
         self.custom_tasks = {}
         pass
         
-    def _action_run_custom_task(self, email_received:Message, name):
+    def _action_run_custom_task(self, email_received:dict, name):
         """? run user stored custom tasks 
         """
         pass
