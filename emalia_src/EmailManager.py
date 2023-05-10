@@ -15,6 +15,8 @@ from email.mime.application import MIMEApplication
 # for zip file
 import zipfile
 from io import BytesIO
+# file saving
+import csv
 
 # Set up IMAP connection to read emails
 class EmailManager(): 
@@ -258,6 +260,7 @@ class EmailManager():
     def parse_email(self, email:Message)->dict:
         """Parse a Message format email into simple, clean dict while downloading attachments
         @param `email:Message` the email to parse
+        @param `email_id` teh id of the email, should be consistent with how its fetched
         @return `:dict` with keys "body", "return_path", "received", date", "from", "subject", "sender", "to", "cc", "attachments:list of path"
         """
         def clean(text):
@@ -271,7 +274,7 @@ class EmailManager():
                 content_disposition = part.get("Content-Disposition", None)
                 # Get body
                 if content_type == "text/plain" and "attachment" not in str(content_disposition):
-                    body = part.get_payload(decode=True).decode()
+                    body = part.get_payload(decode=True).decode("utf-8-sig")
                 # Get the attachments
                 elif content_disposition is not None and content_disposition.strip().startswith("attachment"):
                     file_data = part.get_payload(decode=True)
@@ -295,6 +298,8 @@ class EmailManager():
         else:
             sender = None
         return {
+            "id": email["Message-Id"],
+            "content-type": email["Content-Type"],
             "body": body.strip(), 
             "return-path": email["Return-Path"], 
             "received": email["Received"], 
@@ -312,3 +317,32 @@ class EmailManager():
         assert parsed_email["sender"] or parsed_email["return_path"]
         assert parsed_email["subject"]
         assert isinstance(parsed_email["body"], str)
+        
+    def store_email_to_csv(self, email_received:Message|str, path:str, action:str, comment:str=""):
+        """Save full email content to file and return path
+        @param `email_received:Message|dict` parse or unparsed email
+        @param `action:str` "received", "sent"
+        """
+        # Check if the file exists and has data
+        file_exists = False
+        try:
+            with open(path, 'r') as csvfile:
+                file_exists = bool(csvfile.readline())
+        except FileNotFoundError:
+            pass
+        # parse raw email
+        if isinstance(email_received, Message):
+            email_received = self.parse_email(email_received)
+        email_received_appended = email_received.copy()
+        email_received_appended["action"] = action
+        email_received_appended["comment"] = comment
+
+        # Append the email to the CSV file
+        with open(path, 'a', newline='', encoding="utf-8-sig") as csvfile:
+            fieldnames = email_received_appended.keys()
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+            if not file_exists:
+                writer.writeheader()
+
+            writer.writerow(email_received_appended)
