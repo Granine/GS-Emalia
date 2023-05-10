@@ -126,7 +126,7 @@ class Emalia():
                     # save email
                     self.email_handler.store_email_to_csv(unseen_email_parsed, self._save_path, "received"  )
                     # parse command
-                    user_command = re.search("^\w*", unseen_email_parsed["body"]).group()
+                    user_command = re.search("^\w*", unseen_email_parsed["body"][0][0]).group()
                     # if server freeze, force all command to system manager
                     if self.freeze_server:
                         response_email = self.task_list[0]["function"](unseen_email_parsed)
@@ -219,7 +219,7 @@ class Emalia():
         @return `:dict` the response email to sender
         """
         main_menu = """Options"""
-        path = email_received["body"].split(" ", 1)[1]
+        path = email_received["body"][0][0].split(" ", 1)[1]
         if path:
             if os.path.exists(path):
                 searched_path = path
