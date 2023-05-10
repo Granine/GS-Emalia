@@ -5,15 +5,16 @@ A centralized email controller that provide various python application control c
 Please note Emalia is under active development and is not currently functional
 
 ## Emalia
-an email interacted system that manages and perform a list of predefined tasks.
+An email interacted system that manages and perform a list of predefined tasks.
 
-### Task list (WIP)
-0. manage emalia: [Emalia Instance Name]/0 [command]: various command to manage emalia
-1. read file: READ/1 [PATH]: zip if directory
-2. write file: WRITE/2 [(optional)PATH to directory] + attachment list: write all to a directory (auto create if DNE)
-3. make request: REQUEST/3 [Method] // [URL] // [HEADER] // [BODY]: enter None for a field that is not needed, result will be returned
+### Feature/Tasks can handle
+0. system configure: MANAGE/[Emalia Instance Name]/0 [command]: various command to manage emalia
+1. read file: READ/1 [PATH]: return a local file, zip and return if directory
+2. write file: WRITE/2 [(optional)PATH to directory] + attachment list: write all attachments to a directory (auto create if DNE)
+3. make request: REQUEST/3 [Method] // [URL] // [HEADER] // [BODY]: Make a http request. Enter None for a field that is not needed, result will be returned
 4. execute powershell: SHELL/POWERSHELL/4 [command]: (DANGER) run powershell command
-5. execute python: PYTHON/5 [code]: (DANGER) run python in-process
+5. execute python: PYTHON/5 [code]: (DANGER) run python code in-process
+5. email action: EMAIL/6 [action] [body] [body_2]...: perform email action like send email, forward and others
 
 9. custom tasks: CUSTOM/9 [task]: store custom tasks, one can run with their custom command
 
