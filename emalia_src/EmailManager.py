@@ -260,13 +260,13 @@ class EmailManager():
     def parse_email(self, email:Message)->dict:
         """Parse a Message format email into simple, clean dict while downloading attachments
         @param `email:Message` the email to parse
-        @param `email_id` teh id of the email, should be consistent with how its fetched
-        @return `:dict` with keys "body", "return_path", "received", date", "from", "subject", "sender", "to", "cc", "attachments:list of path"
+        @return `:dict` with keys "id", "content-type", "body:list", "return_path", "received", date", "from", "subject", "sender", "to", "cc", "attachments:list of path"
+        if the email is standard format, [0] is body, [1] is the same body but html encoded
         """
         def clean(text):
             # clean text for creating a folder
             return "".join(c if c.isalnum() else "_" for c in text)
-        body = ""
+        body = []
         attachments = []
         if email.is_multipart():
             for part in email.walk():
@@ -274,7 +274,9 @@ class EmailManager():
                 content_disposition = part.get("Content-Disposition", None)
                 # Get body
                 if content_type == "text/plain" and "attachment" not in str(content_disposition):
-                    body = part.get_payload(decode=True).decode("utf-8-sig")
+                    body.append((part.get_payload(decode=True).decode("utf-8-sig").strip(), "plain"))
+                elif content_type == "text/html" and "attachment" not in str(content_disposition):
+                    body.append((part.get_payload(decode=True).decode("utf-8-sig").strip(), "html"))
                 # Get the attachments
                 elif content_disposition is not None and content_disposition.strip().startswith("attachment"):
                     file_data = part.get_payload(decode=True)
@@ -300,7 +302,7 @@ class EmailManager():
         return {
             "id": email["Message-Id"],
             "content-type": email["Content-Type"],
-            "body": body.strip(), 
+            "body": body, 
             "return-path": email["Return-Path"], 
             "received": email["Received"], 
             "date": email["Date"],  
@@ -316,7 +318,8 @@ class EmailManager():
         """Assert and email have necessary component for responding"""
         assert parsed_email["sender"] or parsed_email["return_path"]
         assert parsed_email["subject"]
-        assert isinstance(parsed_email["body"], str)
+        for body in parsed_email["body"]:
+            assert isinstance(body[0], str)
         
     def store_email_to_csv(self, email_received:Message|str, path:str, action:str, comment:str=""):
         """Save full email content to file and return path
