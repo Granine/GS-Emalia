@@ -179,6 +179,40 @@ class Emalia():
         email_body = email_body
         return self.email_handler.new_email(target_email=target_email, email_subject=email_subject, email_body=email_body, attachments=attachments)
     
+    def _parse_email_part(self, email_body:str)->tuple:
+        """Return a tuple of 3 that contains (Raw body part, <> options, [] options) make sure to strip response section before requesting
+        response will not contain <> or [], can escape with "\" 
+        Requires brackets to be paired
+        """
+        # find<>
+        email_sharp_bracket_pattern = r"(?<!\\)<([^<>]*)(?<!\\)>"
+        matches = re.findall(email_sharp_bracket_pattern, email_body)
+        # replace <> with empty []
+        email_body = re.sub(email_sharp_bracket_pattern, "[]", email_body)
+        email_sharp_bracket_part = []
+        # append <> found to save list
+        for match in matches:
+            if match.strip():
+                email_sharp_bracket_part.append(match.strip())
+        # find []
+        email_square_bracket_pattern = r"(?<!\\)\[([^\[\]]*)(?<!\\)\]"
+        matches = re.findall(email_square_bracket_pattern, email_body)
+        # get all part not in []
+        matches = re.split(email_square_bracket_pattern, email_body)
+        email_square_bracket_part = []
+        for match in matches:
+            if match.strip(">").strip():
+                email_square_bracket_part.append(match.strip())
+            
+        email_raw_body_pattern = r"(?<!\\)(?:^|\])([^\[\]]*)(?<!\\)(?:$|\[)"
+        matches = re.findall(email_raw_body_pattern, email_body)
+        email_raw_body_part = []
+        for match in matches:
+            if match.strip():
+                email_raw_body_part.append(match.strip())
+                    
+        return (email_raw_body_part, email_sharp_bracket_part, email_square_bracket_part)
+        
     @property
     def task_list(self):
         """Worker function list and access keys
@@ -261,6 +295,8 @@ class Emalia():
         """5 Execute a python script in current process by emalia permission
         """
         pass
+    
+    
     
     def _action_register_custom_task(self, email_received:dict, task):
         """9 user can store custom tasks (nest multiple or define new)
