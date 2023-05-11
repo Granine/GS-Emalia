@@ -1,5 +1,5 @@
 # GS-Emalia
-A centralized email controller that provide various python application control capability through email.
+A centralized email controller that allow users to interact with their system with emails. Also supports features like gpt-over-email, http request, custom functions, function chains and more.
 
 # WIP
 Please note Emalia is under active development and is not currently functional
@@ -14,7 +14,8 @@ An email interacted system that manages and perform a list of predefined tasks.
 3. make request: REQUEST/3 [Method] // [URL] // [HEADER] // [BODY]: Make a http request. Enter None for a field that is not needed, result will be returned
 4. execute powershell: SHELL/POWERSHELL/4 [command]: (DANGER) run powershell command
 5. execute python: PYTHON/5 [code]: (DANGER) run python code in-process
-5. email action: EMAIL/6 [action] [body] [body_2]...: perform email action like send email, forward and others
+6. email action: EMAIL/6 [action] [body] [body_2]...: perform email action like send email, forward and others
+7. GPT query: GPT/7 \<gpt settings\> [query body]: Get a gpt response to email body
 
 9. custom tasks: CUSTOM/9 [task]: store custom tasks, one can run with their custom command
 
@@ -44,7 +45,7 @@ The process responsible for email management like reading email, sending email
     - (o) Basic FileManager functionality
       - (o) calculate file distance (depth wise)
       - (o) search files
-    - (1/5) Worker functions (0-5)
+    - (2/6) Worker functions (0-6)
     - (o) Task distribution system (need improvements for more entry keyword support)
     - () Security
       - () enable/disable functions
