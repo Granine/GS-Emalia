@@ -9,6 +9,7 @@ import re
 import logging
 import traceback
 import sys
+import gpt_request
 
 class Emalia():
     """an email interacted system that manages and perform a list of predefined tasks.
@@ -28,6 +29,7 @@ class Emalia():
         4. execute powershell: SHELL/POWERSHELL/4 [command]: (DANGER) run powershell command
         5. execute python: PYTHON/5 [code]: (DANGER) run python in-process
         6. email action: EMAIL/6 [action]: perform actions like send or forward new email 
+        7. GPT query: GPT/7 <gpt settings> [query body]: Get a gpt response to email body
         
         9. custom tasks: CUSTOM/9 [task]: store custom tasks, one can run with their custom command
     """
@@ -126,7 +128,7 @@ class Emalia():
                     # save email
                     self.email_handler.store_email_to_csv(unseen_email_parsed, self._save_path, "received"  )
                     # parse command
-                    user_command = re.search("^\w*", unseen_email_parsed["body"][0][0]).group()
+                    user_command = re.search("^\w*", unseen_email_parsed["body"][0][0]).group().lower() # normalize to lower case
                     # if server freeze, force all command to system manager
                     if self.freeze_server:
                         response_email = self.task_list[0]["function"](unseen_email_parsed)
@@ -197,13 +199,12 @@ class Emalia():
         # find []
         email_square_bracket_pattern = r"(?<!\\)\[([^\[\]]*)(?<!\\)\]"
         matches = re.findall(email_square_bracket_pattern, email_body)
-        # get all part not in []
-        matches = re.split(email_square_bracket_pattern, email_body)
         email_square_bracket_part = []
         for match in matches:
             if match.strip(">").strip():
                 email_square_bracket_part.append(match.strip())
             
+        # find and store body content
         email_raw_body_pattern = r"(?<!\\)(?:^|\])([^\[\]]*)(?<!\\)(?:$|\[)"
         matches = re.findall(email_raw_body_pattern, email_body)
         email_raw_body_part = []
@@ -211,13 +212,14 @@ class Emalia():
             if match.strip():
                 email_raw_body_part.append(match.strip())
                     
-        return (email_raw_body_part, email_sharp_bracket_part, email_square_bracket_part)
+        return (email_raw_body_part, email_square_bracket_part, email_sharp_bracket_part)
         
     @property
     def task_list(self):
         """Worker function list and access keys
         TODO: Redesign task_list so it is more concise
         """
+        # keys must be lower case!
         default_worker_functions = {
             "0": {"function": self._action_manage_emalia, 
                 "name":"System Settings", "trigger": ["0", "manage", f"{self.instance_name}"], "description": "Edit system settings and trigger system commands", "help": ""},
@@ -233,6 +235,8 @@ class Emalia():
                 "name":"Execute Python", "trigger": ["5", "python"], "description": "Run a python script in line", "help": ""},
             "6": {"function": self._action_execute_python,
                 "name":"Email Action", "trigger": ["6", "email"], "description": "Manage and perform email related actions", "help": ""},
+            "7": {"function": self._action_gpt_request,
+                "name":"GPT query", "trigger": ["7", "gpt"], "description": "Get a gpt response to email body", "help": ""},
             "9": {"function": self._action_register_custom_task,
                 "name":"Custom Tasks", "trigger": ["9", "custom"], "description": "Store a new user defined task chian", "help": ""}
         }
@@ -296,7 +300,38 @@ class Emalia():
         """
         pass
     
-    
+    def _action_gpt_request(self, email_received:dict):
+        """7 make gpt request and return result 
+        """
+        
+        main_menu = """Options"""
+        email_gpt_request = self._parse_email_part(email_received["body"][0][0])
+        if email_gpt_request:
+            # populate settings
+            gpt_settings = {}
+            for gpt_setting in email_gpt_request[2]:
+                key_parsed = gpt_setting.split(":", 1)[0]
+                value_parsed = gpt_setting.split(":", 1)[0]
+                if key_parsed in ["temperature", "top_p"]:
+                    value_parsed = float(value_parsed)
+                elif key_parsed in ["n", "max_tokens", "presence_penalty", "frequency_penalty"]:
+                    value_parsed = int(value_parsed)
+                gpt_settings[key_parsed] = value_parsed
+            # make request
+            chat_history = gpt_request.gpt_list_to_chat([email_gpt_request[0][-1]])
+            gpt_response = gpt_request.gpt_request(chat_history, **gpt_settings)
+            if gpt_response[1] == "chat":
+                gpt_response_string = gpt_response[0]["choices"][0]["message"]["content"]
+            else:
+                gpt_response_string = gpt_response[0]["choices"][0]["text"]
+            response_email_subject = f"GPT: request complete"
+            response_email_body = f"{gpt_response_string}"
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
+        else:
+            # return main options
+            response_email_subject = f"GPT: Main Menu"
+            response_email_body = main_menu
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
     
     def _action_register_custom_task(self, email_received:dict, task):
         """9 user can store custom tasks (nest multiple or define new)
