@@ -274,15 +274,14 @@ class EmailManager():
                 content_disposition = part.get("Content-Disposition", None)
                 # Get body
                 if content_type == "text/plain" and "attachment" not in str(content_disposition):
-                    body.append((part.get_payload(decode=True).decode("utf-8-sig").strip(), "plain"))
+                    body.append((part.get_payload(decode=True).decode("utf-8-sig").replace("\ufeff", "").strip(), "plain"))
                 elif content_type == "text/html" and "attachment" not in str(content_disposition):
-                    body.append((part.get_payload(decode=True).decode("utf-8-sig").strip(), "html"))
+                    body.append((part.get_payload(decode=True).decode("utf-8-sig").replace("\ufeff", "").strip(), "html"))
                 # Get the attachments
                 elif content_disposition is not None and content_disposition.strip().startswith("attachment"):
                     file_data = part.get_payload(decode=True)
                     file_name = part.get_filename()
                     attachments.append((file_name, file_data))
-                    
                     if file_name:
                         folder_name = self.attachment_path
                         if not os.path.isdir(folder_name):
@@ -292,7 +291,7 @@ class EmailManager():
                         # download attachment and save it
                         open(filepath, "wb").write(part.get_payload(decode=True))
         else:
-            body = email.get_payload(decode=True).decode()
+            body.append(email.get_payload(decode=True).decode("utf-8-sig"))
         if email["Sender"]:
             sender = email["Sender"]  
         elif "<" in email["From"] and ">" in email["From"]:
@@ -319,7 +318,19 @@ class EmailManager():
         assert parsed_email["sender"] or parsed_email["return_path"]
         assert parsed_email["subject"]
         for body in parsed_email["body"]:
+            assert isinstance(body, tuple)
             assert isinstance(body[0], str)
+            
+    def get_reply(self, email_received:Message|str):
+        """Get the email reply chain
+        it appears there are 3 types of responses
+        1 + 2 appear together, where 1 is pure text including response email
+        2 is html version, with responses in quoteblocks
+        3 is when response messages are raised by >, and >> levels
+        1, 2 will be parsed later due to their difficulties
+        3 will depend on key words like On XXX wrote: to determine the start of the message.
+        """
+        pass
         
     def store_email_to_csv(self, email_received:Message|str, path:str, action:str, comment:str=""):
         """Save full email content to file and return path
