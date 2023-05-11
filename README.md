@@ -62,6 +62,7 @@ The process responsible for email management like reading email, sending email
       - () safe file delete
     - () Save the current conversation chain to a file
     - () Read history emails conversation (local save)
+    - () Dynamic email scan interval
 - Version 0.0.1
     - () Basic UI
 
