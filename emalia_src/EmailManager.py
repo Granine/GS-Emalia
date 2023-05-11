@@ -291,7 +291,7 @@ class EmailManager():
                         # download attachment and save it
                         open(filepath, "wb").write(part.get_payload(decode=True))
         else:
-            body.append(email.get_payload(decode=True).decode("utf-8-sig"))
+            body.append((email.get_payload(decode=True).decode("utf-8-sig"), email.get_content_type().split("/")[1]))
         if email["Sender"]:
             sender = email["Sender"]  
         elif "<" in email["From"] and ">" in email["From"]:
