@@ -134,7 +134,7 @@ class EmailManager():
             parsed_email = message_from_bytes(raw_email)
         return parsed_email
     
-    def new_email(self, target_email:str, email_subject:str, email_body:str="", attachments:list=[], main_body_type="TEXT/PLAIN")->Message:
+    def new_email(self, target_email:str, email_subject:str, email_body:str="", attachments:list|str=[], main_body_type="TEXT/PLAIN")->Message:
         """Prepare a new email
         @param `target_email:str` to whom the email will be sent
         @param `email_subject:str` subject of email to send
@@ -153,6 +153,7 @@ class EmailManager():
         body.set_payload(email_body)
         outgoing_email.attach(body)
         # handle payload
+        if isinstance(attachments, str): attachments = [attachments]
         for attachment in attachments:
             # will modify attachment
             self.add_attachment(outgoing_email, attachment)

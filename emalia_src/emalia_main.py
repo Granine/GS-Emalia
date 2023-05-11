@@ -168,14 +168,19 @@ class Emalia():
         self.server_running = False
     
     # ========================== WORKER FUNCTIONs =========================
-    def _validate_password(password):
+    def _validate_password(password:str):
         """Check if a user provided password is the save as record
         """
         pass
     
-    def _new_emalia_email(self, email_received:dict, email_subject:str, email_body:str="", attachments:list=[]):
-        """Prepare emalia format email
+    def _new_emalia_email(self, email_received:dict, email_subject:str="", email_body:str="", attachments:list|str=[]):
+        """Prepare emalia format email for reply
+        @param `email_received:dict` the parsed email from sender (extract sender)
+        @param `email_subject:str` subject of the email 
+        @param `email_body:str` subject of the email 
+        @param `attachments:list of str` the list of file path to attach with email, auto zip if dir
         TODO add footer to body
+        TODO reply format
         """
         target_email = email_received["sender"]
         email_body = email_body
