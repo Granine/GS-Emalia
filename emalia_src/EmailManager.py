@@ -326,8 +326,8 @@ class EmailManager():
             assert isinstance(body, tuple)
             assert isinstance(body[0], str)
             
-    def get_reply(self, email_received:Message|str):
-        """Get the email reply chain
+    def split_by_reply(self, email_received:Message|str)->list:
+        """split a email into series of replies [body, last reply, reply from 2 times before, ...]
         it appears there are 3 types of responses
         1 + 2 appear together, where 1 is pure text including response email
         2 is html version, with responses in quoteblocks
