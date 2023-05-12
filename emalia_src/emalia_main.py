@@ -203,6 +203,7 @@ class Emalia():
         for match in matches:
             if match.strip():
                 email_sharp_bracket_part.append(match.strip())
+                
         # find []
         email_square_bracket_pattern = r"(?<!\\)\[([^\[\]]*)(?<!\\)\]"
         matches = re.findall(email_square_bracket_pattern, email_body)
@@ -223,7 +224,7 @@ class Emalia():
         
     @property
     def task_list(self):
-        """Worker function list and access keys
+        """stores Worker function list, access keys and corresponding action functions
         TODO: Redesign task_list so it is more concise
         """
         # keys must be lower case!
@@ -251,7 +252,8 @@ class Emalia():
         return default_worker_functions
         
     def _action_manage_emalia(self, email_received:dict, emalia_command:str=""):
-        """0 Alter emalia behaviour by emalia permission
+        """0 Alter emalia behaviour (settings) by permission
+        @param `email_received:dict` the email sent by sender
         """
         main_menu = """Options"""
         response_email_subject = f"MANAGE: complete"
@@ -265,6 +267,7 @@ class Emalia():
         """
         main_menu = """Options"""
         path = self._parse_email_part(email_received["body"][0][0])[0][-1]
+        # if path is passed in
         if path:
             if os.path.exists(path):
                 searched_path = path
@@ -280,6 +283,7 @@ class Emalia():
             response_email_subject = f"READ: {path_name} complete"
             response_email_body = f"{path_name} found at {path}"
             return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
+        # help menu
         else:
             # return main options
             response_email_subject = f"READ: Main Menu"
