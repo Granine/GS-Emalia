@@ -314,10 +314,14 @@ class EmailManager():
             "attachments": attachments
         }
         
-    def assert_valid_email_received(self, parsed_email):
-        """Assert and email have necessary component for responding"""
+    def assert_valid_email_received(self, parsed_email:dict):
+        """Assert and email have necessary component for responding
+        @param `parsed_email:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
+        @exception `:AssertionError` if file is not a valid email format needed to understand email and make reply
+        """
         assert parsed_email["sender"] or parsed_email["return_path"]
-        assert parsed_email["subject"]
+        assert isinstance(parsed_email["subject"])
+        # multiple body in email, check each is tuple with type at right
         for body in parsed_email["body"]:
             assert isinstance(body, tuple)
             assert isinstance(body[0], str)
