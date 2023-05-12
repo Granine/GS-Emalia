@@ -187,7 +187,7 @@ class Emalia():
         return self.email_handler.new_email(target_email=target_email, email_subject=email_subject, email_body=email_body, attachments=attachments)
     
     def _parse_email_part(self, email_body:str)->tuple:
-        """Return a tuple of 3 that contains (Raw body part, [] options, <> options) make sure to strip response section before requesting
+        """Return a tuple of 3 that contains (Raw body part, [] options, <> options) make sure to strip reply section before requesting
         @param `email_body:str` the email body to be parse, must be plain string, not html or rich
         @return `:tuple of size 3` 
         response will not contain <> or [], will escape with "\". So <123> with return 123, \<123\> will not
@@ -196,7 +196,7 @@ class Emalia():
         # find<>
         email_sharp_bracket_pattern = r"(?<!\\)<([^<>]*)(?<!\\)>"
         matches = re.findall(email_sharp_bracket_pattern, email_body)
-        # replace <> with empty [] to simplify raw body parsing. can remove this and spedn more time to update raw_body parsing to handle both [] and <>
+        # replace <> with empty [] to simplify raw body parsing. can remove this and spend more time to update raw_body parsing to handle both [] and <>
         email_body = re.sub(email_sharp_bracket_pattern, "[]", email_body)
         email_sharp_bracket_part = []
         # append <> found to save list
@@ -264,7 +264,7 @@ class Emalia():
         @return `:dict` the response email to sender
         """
         main_menu = """Options"""
-        path = email_received["body"][0][0].split(" ", 1)[1]
+        path = self._parse_email_part(email_received["body"][0][0])[0][-1]
         if path:
             if os.path.exists(path):
                 searched_path = path
