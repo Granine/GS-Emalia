@@ -338,9 +338,11 @@ class EmailManager():
         pass
         
     def store_email_to_csv(self, email_received:Message|str, path:str, action:str, comment:str=""):
-        """Save full email content to file and return path
+        """Save full email content
         @param `email_received:Message|dict` parse or unparsed email
-        @param `action:str` "received", "sent"
+        @param `path:str` file location to save, create if dne
+        @param `action:str` "received"|"sent", email type
+        @param `comment:str` comment to add for email
         """
         # Check if the file exists and has data
         file_exists = False
@@ -352,15 +354,18 @@ class EmailManager():
         # parse raw email
         if isinstance(email_received, Message):
             email_received = self.parse_email(email_received)
+        # prepare for csv header insertion
         email_received_appended = email_received.copy()
         email_received_appended["action"] = action
         email_received_appended["comment"] = comment
 
         # Append the email to the CSV file
         with open(path, 'a', newline='', encoding="utf-8-sig") as csvfile:
+            # col = parsed email keys
             fieldnames = email_received_appended.keys()
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
+            # writ col name if new file
             if not file_exists:
                 writer.writeheader()
 
