@@ -15,6 +15,8 @@ from email.mime.application import MIMEApplication
 # for zip file
 import zipfile
 from io import BytesIO
+# file saving
+import csv
 
 # Set up IMAP connection to read emails
 class EmailManager(): 
@@ -132,7 +134,7 @@ class EmailManager():
             parsed_email = message_from_bytes(raw_email)
         return parsed_email
     
-    def new_email(self, target_email:str, email_subject:str, email_body:str="", attachments:list=[], main_body_type="TEXT/PLAIN")->Message:
+    def new_email(self, target_email:str, email_subject:str, email_body:str="", attachments:list|str=[], main_body_type="TEXT/PLAIN")->Message:
         """Prepare a new email
         @param `target_email:str` to whom the email will be sent
         @param `email_subject:str` subject of email to send
@@ -151,6 +153,7 @@ class EmailManager():
         body.set_payload(email_body)
         outgoing_email.attach(body)
         # handle payload
+        if isinstance(attachments, str): attachments = [attachments]
         for attachment in attachments:
             # will modify attachment
             self.add_attachment(outgoing_email, attachment)
@@ -258,12 +261,13 @@ class EmailManager():
     def parse_email(self, email:Message)->dict:
         """Parse a Message format email into simple, clean dict while downloading attachments
         @param `email:Message` the email to parse
-        @return `:dict` with keys "body", "return_path", "received", date", "from", "subject", "sender", "to", "cc", "attachments:list of path"
+        @return `:dict` with keys "id", "content-type", "body:list", "return_path", "received", date", "from", "subject", "sender", "to", "cc", "attachments:list of path"
+        if the email is standard format, [0] is body, [1] is the same body but html encoded
         """
         def clean(text):
             # clean text for creating a folder
             return "".join(c if c.isalnum() else "_" for c in text)
-        body = ""
+        body = []
         attachments = []
         if email.is_multipart():
             for part in email.walk():
@@ -271,13 +275,14 @@ class EmailManager():
                 content_disposition = part.get("Content-Disposition", None)
                 # Get body
                 if content_type == "text/plain" and "attachment" not in str(content_disposition):
-                    body = part.get_payload(decode=True).decode()
+                    body.append((part.get_payload(decode=True).decode("utf-8-sig").replace("\ufeff", "").strip(), "plain"))
+                elif content_type == "text/html" and "attachment" not in str(content_disposition):
+                    body.append((part.get_payload(decode=True).decode("utf-8-sig").replace("\ufeff", "").strip(), "html"))
                 # Get the attachments
                 elif content_disposition is not None and content_disposition.strip().startswith("attachment"):
                     file_data = part.get_payload(decode=True)
                     file_name = part.get_filename()
                     attachments.append((file_name, file_data))
-                    
                     if file_name:
                         folder_name = self.attachment_path
                         if not os.path.isdir(folder_name):
@@ -287,7 +292,7 @@ class EmailManager():
                         # download attachment and save it
                         open(filepath, "wb").write(part.get_payload(decode=True))
         else:
-            body = email.get_payload(decode=True).decode()
+            body.append((email.get_payload(decode=True).decode("utf-8-sig"), email.get_content_type().split("/")[1]))
         if email["Sender"]:
             sender = email["Sender"]  
         elif "<" in email["From"] and ">" in email["From"]:
@@ -295,7 +300,9 @@ class EmailManager():
         else:
             sender = None
         return {
-            "body": body.strip(), 
+            "id": email["Message-Id"],
+            "content-type": email["Content-Type"],
+            "body": body, 
             "return-path": email["Return-Path"], 
             "received": email["Received"], 
             "date": email["Date"],  
@@ -307,8 +314,59 @@ class EmailManager():
             "attachments": attachments
         }
         
-    def assert_valid_email_received(self, parsed_email):
-        """Assert and email have necessary component for responding"""
+    def assert_valid_email_received(self, parsed_email:dict):
+        """Assert and email have necessary component for responding
+        @param `parsed_email:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
+        @exception `:AssertionError` if file is not a valid email format needed to understand email and make reply
+        """
         assert parsed_email["sender"] or parsed_email["return_path"]
-        assert parsed_email["subject"]
-        assert isinstance(parsed_email["body"], str)
+        assert isinstance(parsed_email["subject"])
+        # multiple body in email, check each is tuple with type at right
+        for body in parsed_email["body"]:
+            assert isinstance(body, tuple)
+            assert isinstance(body[0], str)
+            
+    def split_by_reply(self, email_received:Message|str)->list:
+        """split a email into series of replies [body, last reply, reply from 2 times before, ...]
+        it appears there are 3 types of responses
+        1 + 2 appear together, where 1 is pure text including response email
+        2 is html version, with responses in quoteblocks
+        3 is when response messages are raised by >, and >> levels
+        1, 2 will be parsed later due to their difficulties
+        3 will depend on key words like On XXX wrote: to determine the start of the message.
+        """
+        pass
+        
+    def store_email_to_csv(self, email_received:Message|str, path:str, action:str, comment:str=""):
+        """Save full email content
+        @param `email_received:Message|dict` parse or unparsed email
+        @param `path:str` file location to save, create if dne
+        @param `action:str` "received"|"sent", email type
+        @param `comment:str` comment to add for email
+        """
+        # Check if the file exists and has data
+        file_exists = False
+        try:
+            with open(path, 'r') as csvfile:
+                file_exists = bool(csvfile.readline())
+        except FileNotFoundError:
+            pass
+        # parse raw email
+        if isinstance(email_received, Message):
+            email_received = self.parse_email(email_received)
+        # prepare for csv header insertion
+        email_received_appended = email_received.copy()
+        email_received_appended["action"] = action
+        email_received_appended["comment"] = comment
+
+        # Append the email to the CSV file
+        with open(path, 'a', newline='', encoding="utf-8-sig") as csvfile:
+            # col = parsed email keys
+            fieldnames = email_received_appended.keys()
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+            # writ col name if new file
+            if not file_exists:
+                writer.writeheader()
+
+            writer.writerow(email_received_appended)

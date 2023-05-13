@@ -9,6 +9,7 @@ import re
 import logging
 import traceback
 import sys
+import gpt_request
 
 class Emalia():
     """an email interacted system that manages and perform a list of predefined tasks.
@@ -28,6 +29,7 @@ class Emalia():
         4. execute powershell: SHELL/POWERSHELL/4 [command]: (DANGER) run powershell command
         5. execute python: PYTHON/5 [code]: (DANGER) run python in-process
         6. email action: EMAIL/6 [action]: perform actions like send or forward new email 
+        7. GPT query: GPT/7 <gpt settings> [query body]: Get a gpt response to email body
         
         9. custom tasks: CUSTOM/9 [task]: store custom tasks, one can run with their custom command
     """
@@ -45,6 +47,7 @@ class Emalia():
     _max_response_per_cycle = 3
     _max_send_count = 1 # max email emalia can send per instance, <0 for infinite
     _file_roots = f"{__file__}/../../" # should point to GS-Emalia directory
+    _save_path = f"{__file__}/../../history.csv" # a history file with .csv extension, create if DNE 
     # =====================Runtime Variable=========================
     # do not change unless confident
     server_start_time:datetime = None # tracks the start time of last server
@@ -100,6 +103,7 @@ class Emalia():
         self.statistics = {"sent": 0, "received": 0}
         while self.server_running:
             loop_start_time = datetime.now()
+            response_email = None
             try:
                 # get unseen_emails
                 unseen_email_ids = self.email_handler.unseen_emails()
@@ -121,7 +125,10 @@ class Emalia():
             # handle user request if new email detected
             if unseen_email:
                 try:
-                    user_command = re.search("^\w*", unseen_email_parsed["body"]).group()
+                    # save email
+                    self.email_handler.store_email_to_csv(unseen_email_parsed, self._save_path, "received"  )
+                    # parse command
+                    user_command = re.search("^\w*", unseen_email_parsed["body"][0][0]).group().lower() # normalize to lower case
                     # if server freeze, force all command to system manager
                     if self.freeze_server:
                         response_email = self.task_list[0]["function"](unseen_email_parsed)
@@ -132,7 +139,8 @@ class Emalia():
                 except Exception as err:
                     self.logger.exception(f"Error: {user_command} failed")
                     response_email = self._new_emalia_email(unseen_email_parsed, f"Error: {err}", traceback.format_exc())
-                # freeze if conditions not met
+            if unseen_email or response_email:
+            # freeze if conditions not met
                 if (self.statistics["sent"] >= self._max_send_count) and (self._max_send_count >= 0):
                     self.freeze_server = True
                 # reply based on action
@@ -160,25 +168,66 @@ class Emalia():
         self.server_running = False
     
     # ========================== WORKER FUNCTIONs =========================
-    def _validate_password(password):
+    def _validate_password(password:str):
         """Check if a user provided password is the save as record
         """
         pass
     
-    def _new_emalia_email(self, email_received:Message, email_subject:str, email_body:str="", attachments:list=[]):
-        """Prepare emalia format email
+    def _new_emalia_email(self, email_received:dict, email_subject:str="", email_body:str="", attachments:list|str=[]):
+        """Prepare emalia format email for reply
+        @param `email_received:dict` the parsed email from sender (extract sender)
+        @param `email_subject:str` subject of the email 
+        @param `email_body:str` subject of the email 
+        @param `attachments:list of str` the list of file path to attach with email, auto zip if dir
         TODO add footer to body
+        TODO reply format
         """
         target_email = email_received["sender"]
         email_body = email_body
         return self.email_handler.new_email(target_email=target_email, email_subject=email_subject, email_body=email_body, attachments=attachments)
     
-    
+    def _parse_email_part(self, email_body:str)->tuple:
+        """Return a tuple of 3 that contains (Raw body part, [] options, <> options) make sure to strip reply section before requesting
+        @param `email_body:str` the email body to be parse, must be plain string, not html or rich
+        @return `:tuple of size 3` 
+        response will not contain <> or [], will escape with "\". So <123> with return 123, \<123\> will not
+        Requires brackets to be paired, there cannot be floating brackets
+        """
+        # find<>
+        email_sharp_bracket_pattern = r"(?<!\\)<([^<>]*)(?<!\\)>"
+        matches = re.findall(email_sharp_bracket_pattern, email_body)
+        # replace <> with empty [] to simplify raw body parsing. can remove this and spend more time to update raw_body parsing to handle both [] and <>
+        email_body = re.sub(email_sharp_bracket_pattern, "[]", email_body)
+        email_sharp_bracket_part = []
+        # append <> found to save list
+        for match in matches:
+            if match.strip():
+                email_sharp_bracket_part.append(match.strip())
+                
+        # find []
+        email_square_bracket_pattern = r"(?<!\\)\[([^\[\]]*)(?<!\\)\]"
+        matches = re.findall(email_square_bracket_pattern, email_body)
+        email_square_bracket_part = []
+        for match in matches:
+            if match.strip(">").strip():
+                email_square_bracket_part.append(match.strip())
+            
+        # find and store body content
+        email_raw_body_pattern = r"(?<!\\)(?:^|\])([^\[\]]*)(?<!\\)(?:$|\[)"
+        matches = re.findall(email_raw_body_pattern, email_body)
+        email_raw_body_part = []
+        for match in matches:
+            if match.strip():
+                email_raw_body_part.append(match.strip())
+                    
+        return (email_raw_body_part, email_square_bracket_part, email_sharp_bracket_part)
+        
     @property
     def task_list(self):
-        """Worker function list and access keys
+        """stores Worker function list, access keys and corresponding action functions
         TODO: Redesign task_list so it is more concise
         """
+        # keys must be lower case!
         default_worker_functions = {
             "0": {"function": self._action_manage_emalia, 
                 "name":"System Settings", "trigger": ["0", "manage", f"{self.instance_name}"], "description": "Edit system settings and trigger system commands", "help": ""},
@@ -194,27 +243,32 @@ class Emalia():
                 "name":"Execute Python", "trigger": ["5", "python"], "description": "Run a python script in line", "help": ""},
             "6": {"function": self._action_execute_python,
                 "name":"Email Action", "trigger": ["6", "email"], "description": "Manage and perform email related actions", "help": ""},
+            "7": {"function": self._action_gpt_request,
+                "name":"GPT query", "trigger": ["7", "gpt"], "description": "Get a gpt response to email body", "help": ""},
             "9": {"function": self._action_register_custom_task,
                 "name":"Custom Tasks", "trigger": ["9", "custom"], "description": "Store a new user defined task chian", "help": ""}
         }
         default_worker_functions.update(self.custom_tasks)
         return default_worker_functions
         
-    def _action_manage_emalia(self, email_received:Message, emalia_command:str=""):
-        """0 Alter emalia behaviour by emalia permission
+    def _action_manage_emalia(self, email_received:dict, emalia_command:str=""):
+        """0 Alter emalia behaviour (settings) by permission
+        @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
+        @return `:dict` the response email to sender
         """
         main_menu = """Options"""
         response_email_subject = f"MANAGE: complete"
         response_email_body = main_menu
         return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
     
-    def _action_read_file(self, email_received:Message)->Message:
+    def _action_read_file(self, email_received:dict)->Message:
         """1 find one file and attach it as attachment to response email by emalia permission and return it
-        @param `email_received:Message` the email sent by sender
-        @return `:Message` the response email to sender
+        @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
+        @return `:dict` the response email to sender
         """
         main_menu = """Options"""
-        path = email_received["body"].split(" ", 1)[1]
+        path = self._parse_email_part(email_received["body"][0][0])[0][-1]
+        # if path is passed in
         if path:
             if os.path.exists(path):
                 searched_path = path
@@ -230,6 +284,7 @@ class Emalia():
             response_email_subject = f"READ: {path_name} complete"
             response_email_body = f"{path_name} found at {path}"
             return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
+        # help menu
         else:
             # return main options
             response_email_subject = f"READ: Main Menu"
@@ -237,33 +292,67 @@ class Emalia():
             return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
                     
     
-    def _action_write_file(self, email_received:Message, content:bytes, path:str="DEFAULT"):
+    def _action_write_file(self, email_received:dict, content:bytes, path:str="DEFAULT"):
         """2 write the content of a file by emalia permission
         """
         pass
         
-    def _action_make_request(self, email_received:Message, http_method, http_url, http_header, http_body):
+    def _action_make_request(self, email_received:dict, http_method, http_url, http_header, http_body):
         """3 make an external request by emalia permission
         """
         pass
     
-    def _action_execute_powershell(self, email_received:Message, command):
+    def _action_execute_powershell(self, email_received:dict, command):
         """4 Execute a powershell command by emalia permission
         """
         pass
     
-    def _action_execute_python(self, email_received:Message, python):
+    def _action_execute_python(self, email_received:dict, python):
         """5 Execute a python script in current process by emalia permission
         """
         pass
     
-    def _action_register_custom_task(self, email_received:Message, task):
+    def _action_gpt_request(self, email_received:dict):
+        """7 make gpt request and return result 
+        """
+        main_menu = """Options"""
+        email_gpt_request = self._parse_email_part(email_received["body"][0][0])
+        if email_gpt_request:
+            # populate settings
+            gpt_settings = {}
+            for gpt_setting in email_gpt_request[2]:
+                key_parsed = gpt_setting.split(":", 1)[0]
+                value_parsed = gpt_setting.split(":", 1)[0]
+                if key_parsed in ["temperature", "top_p"]:
+                    value_parsed = float(value_parsed)
+                elif key_parsed in ["n", "max_tokens", "presence_penalty", "frequency_penalty"]:
+                    value_parsed = int(value_parsed)
+                gpt_settings[key_parsed] = value_parsed
+            # make request
+            chat_history = gpt_request.gpt_list_to_chat([email_gpt_request[0][-1]])
+            gpt_response = gpt_request.gpt_request(chat_history, **gpt_settings)
+            if gpt_response[1] == "chat":
+                gpt_response_string = gpt_response[0]["choices"][0]["message"]["content"]
+            else:
+                gpt_response_string = gpt_response[0]["choices"][0]["text"]
+            response_email_subject = f"GPT: request complete"
+            response_email_body = f"{gpt_response_string}"
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
+        else:
+            # return main options
+            response_email_subject = f"GPT: Main Menu"
+            response_email_body = main_menu
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
+    
+    def _action_register_custom_task(self, email_received:dict, task):
         """9 user can store custom tasks (nest multiple or define new)
+        @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
+        @return `:dict` the response email to sender
         """
         self.custom_tasks = {}
         pass
         
-    def _action_run_custom_task(self, email_received:Message, name):
+    def _action_run_custom_task(self, email_received:dict, name):
         """? run user stored custom tasks 
         """
         pass
