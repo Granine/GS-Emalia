@@ -264,7 +264,7 @@ class Emalia():
     def _action_read_file(self, email_received:dict)->Message:
         """1 find one file and attach it as attachment to response email by emalia permission and return it
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
-        @return `:dict` the response email to sender
+        @return `:Message` the response email to sender
         """
         main_menu = """Options"""
         path = self._parse_email_part(email_received["body"][0][0])[0][-1]
@@ -314,6 +314,8 @@ class Emalia():
     
     def _action_gpt_request(self, email_received:dict):
         """7 make gpt request and return result 
+        @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
+        @return `:Message` the response email to sender
         """
         main_menu = """Options"""
         email_gpt_request = self._parse_email_part(email_received["body"][0][0])
@@ -347,7 +349,7 @@ class Emalia():
     def _action_register_custom_task(self, email_received:dict, task):
         """9 user can store custom tasks (nest multiple or define new)
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
-        @return `:dict` the response email to sender
+        @return `:Message` the response email to sender
         """
         self.custom_tasks = {}
         pass
