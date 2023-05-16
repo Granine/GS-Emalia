@@ -338,7 +338,7 @@ class EmailManager():
         pass
         
     def store_email_to_csv(self, email_received:Message|str, path:str, action:str, comment:str=""):
-        """Save full email content
+        """Save full email content to csv (commonly used to track history)
         @param `email_received:Message|dict` parse or unparsed email
         @param `path:str` file location to save, create if dne
         @param `action:str` "received"|"sent", email type
