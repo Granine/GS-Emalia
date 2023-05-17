@@ -150,7 +150,7 @@ class EmailManager():
         outgoing_email["Subject"] = email_subject
         body = Message()
         body.set_type(main_body_type)
-        body.set_payload(email_body)
+        body.set_payload(email_body, "utf-8")
         outgoing_email.attach(body)
         # handle payload
         if isinstance(attachments, str): attachments = [attachments]
@@ -320,7 +320,7 @@ class EmailManager():
         @exception `:AssertionError` if file is not a valid email format needed to understand email and make reply
         """
         assert parsed_email["sender"] or parsed_email["return_path"]
-        assert isinstance(parsed_email["subject"], strs)
+        assert isinstance(parsed_email["subject"], str)
         # multiple body in email, check each is tuple with type at right
         for body in parsed_email["body"]:
             assert isinstance(body, tuple)

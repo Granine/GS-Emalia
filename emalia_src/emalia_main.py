@@ -45,7 +45,7 @@ class Emalia():
     # =====================Configurable Settings=========================
     # should not be changed mid-execution or may error out
     _max_response_per_cycle = 3
-    _max_send_count = 1 # max email emalia can send per instance, <0 for infinite
+    _max_send_count = -1 # max email emalia can send per instance, <0 for infinite
     _file_roots = f"{__file__}/../../" # should point to GS-Emalia directory
     _save_path = f"{__file__}/../../history.csv" # a history file with .csv extension, create if DNE 
     # =====================Runtime Variable=========================
@@ -131,7 +131,7 @@ class Emalia():
                     user_command = re.search("^\w*", unseen_email_parsed["body"][0][0]).group().lower() # normalize to lower case
                     # if server freeze, force all command to system manager
                     if self.freeze_server:
-                        response_email = self.task_list[0]["function"](unseen_email_parsed)
+                        response_email = self.task_list["0"]["function"](unseen_email_parsed)
                     elif user_command in self.task_list.keys():
                         response_email = self.task_list[user_command]["function"](unseen_email_parsed)
                     else:
@@ -143,6 +143,7 @@ class Emalia():
             # freeze if conditions not met
                 if (self.statistics["sent"] >= self._max_send_count) and (self._max_send_count >= 0):
                     self.freeze_server = True
+                    self.logger.info("Server frozen")
                 # reply based on action
                 try:
                     self.email_handler.send_email(response_email)
@@ -332,6 +333,7 @@ class Emalia():
                 gpt_settings[key_parsed] = value_parsed
             # make request
             chat_history = gpt_request.gpt_list_to_chat([email_gpt_request[0][-1]])
+            self.logger.info("GPT request queued")
             gpt_response = gpt_request.gpt_request(chat_history, **gpt_settings)
             if gpt_response[1] == "chat":
                 gpt_response_string = gpt_response[0]["choices"][0]["message"]["content"]
