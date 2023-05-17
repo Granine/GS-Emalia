@@ -320,7 +320,7 @@ class EmailManager():
         @exception `:AssertionError` if file is not a valid email format needed to understand email and make reply
         """
         assert parsed_email["sender"] or parsed_email["return_path"]
-        assert isinstance(parsed_email["subject"])
+        assert isinstance(parsed_email["subject"], strs)
         # multiple body in email, check each is tuple with type at right
         for body in parsed_email["body"]:
             assert isinstance(body, tuple)
