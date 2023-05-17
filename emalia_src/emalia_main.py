@@ -140,7 +140,7 @@ class Emalia():
                     self.logger.exception(f"Error: {user_command} failed")
                     response_email = self._new_emalia_email(unseen_email_parsed, f"Error: {err}", traceback.format_exc())
             if unseen_email or response_email:
-            # freeze if conditions not met
+            # freeze if conditions are not meet
                 if (self.statistics["sent"] >= self._max_send_count) and (self._max_send_count >= 0):
                     self.freeze_server = True
                     self.logger.info("Server frozen")
@@ -371,9 +371,14 @@ if __name__ == "__main__":
     main_loop_thread = threading.Thread(target=emalia_instance.main_loop)
     main_loop_thread.start()
     # exit emalia and external controls
-    supported_command = ["stop"]
-    while selection:=input("Command:\n") not in supported_command:
-        print(f"Input {selection} is not a valid command from list: {supported_command}")
+    supported_command = ["stop", "freeze"]
+    while selection:=input("Command:\n"):
+        if selection.lower() == "stop":
+            break
+        elif selection.lower() == "freeze":
+            emalia_instance.freeze_server = True
+        else:
+            print(f"Input {selection} is not a valid command from list: {supported_command}")
     emalia_instance.break_loop()
     main_loop_thread.join()
     print("Tasks complete")
