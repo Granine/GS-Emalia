@@ -356,11 +356,12 @@ class EmailManager():
             email_received = self.parse_email(email_received)
         # prepare for csv header insertion
         email_received_appended = email_received.copy()
+        email_received_appended["body"] = str(email_received_appended["body"])
         email_received_appended["action"] = action
         email_received_appended["comment"] = comment
 
         # Append the email to the CSV file
-        with open(path, 'a', newline='', encoding="utf-8-sig") as csvfile:
+        with open(path, 'a', newline='', encoding="utf-8") as csvfile:
             # col = parsed email keys
             fieldnames = email_received_appended.keys()
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
