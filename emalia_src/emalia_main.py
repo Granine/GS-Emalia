@@ -304,13 +304,26 @@ class Emalia():
         assert len(paths_of_attachments) == len(paths_to_write) or len(paths_to_write) == 1 or len(paths_of_attachments) == 0
         # if path is passed in
         
-        if len(paths_of_attachments) == len(paths_to_write):
+        if paths_of_attachments:
+            # if only one path, duplicate into array
+            if len(paths_to_write) == 1: 
+                # if not dir, force to get level above
+                if not os.path.isdir(paths_to_write[0]):
+                    self.logger.info(f"WRITE: input path {path} not dir, normalizing")
+                    paths_to_write = [os.path.dirname(paths_to_write[0])]
+                paths_to_write = paths_to_write * len(paths_of_attachments)
+            # for each attachment, save to target location
             for i, path in enumerate(paths_to_write):
                 if os.path.exists(path):
-                    path_to_write = path
-                elif path_to_write:=FileManager.search_exact(path, path=self._file_roots, ignore_type=True, exception=False):
+                    if os.path.isdir(path):
+                        path_to_write = path
+                    # not directory, get level above
+                    else:
+                        self.logger.info(f"WRITE: input path {path} not dir, normalizing")
+                        path_to_write = os.path.dirname(path)
+                elif path_to_write:=FileManager.search_exact(path, path=self._file_roots, target_type="dir", ignore_type=True, exception=False):
                     pass
-                elif path_to_write:=FileManager.search_exact(path, path=self._file_roots, ignore_type=False, exception=False):
+                elif path_to_write:=FileManager.search_exact(path, path=self._file_roots, target_type="dir", ignore_type=False, exception=False):
                     pass
                 else:
                     raise AttributeError(f"{path} does not exist")
@@ -322,19 +335,7 @@ class Emalia():
             response_email_body = f"{len(paths_to_write)} saved"
             # TODO specify where each file is saved
             return self._new_emalia_email(email_received, response_email_subject, response_email_body)
-        elif len(paths_to_write) == 1:
-            if os.path.exists(paths_to_write):
-                path_to_write = paths_to_write
-            elif path_to_write:=FileManager.search_exact(path, path=self._file_roots, ignore_type=True, exception=False):
-                pass
-            elif path_to_write:=FileManager.search_exact(path, path=self._file_roots, ignore_type=False, exception=False):
-                pass
-            else:
-                raise AttributeError(f"{path} does not exist")
-            for path in paths_of_attachments:
-                if os.path.exists(path):
-                    pass
-                    #TODO save
+        
         # help menu
         else:
             # return main options
