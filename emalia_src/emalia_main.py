@@ -188,9 +188,9 @@ class Emalia():
         return self.email_handler.new_email(target_email=target_email, email_subject=email_subject, email_body=email_body, attachments=attachments)
     
     def _parse_email_part(self, email_body:str)->tuple:
-        """Return a tuple of 3 that contains (Raw body part, [] options, <> options) make sure to strip reply section before requesting
+        """Return a tuple of 3 that contains (Raw body part (space or [] or <> as break), [] options ([] as break), <> options (<> as break)) make sure to strip reply section before requesting
         @param `email_body:str` the email body to be parse, must be plain string, not html or rich
-        @return `:tuple of size 3` 
+        @return `:tuple len(3) of list`  the parsed email body, [0][0] will be command, [0][1] first word and so on
         response will not contain <> or [], will escape with "\". So <123> with return 123, \<123\> will not
         Requires brackets to be paired, there cannot be floating brackets
         """
@@ -293,9 +293,53 @@ class Emalia():
             return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
                     
     
-    def _action_write_file(self, email_received:dict, content:bytes, path:str="DEFAULT"):
+    def _action_write_file(self, email_received:dict):
         """2 write the content of a file by emalia permission
+        @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
+        @return `:Message` the response email to sender
         """
+        main_menu = """Options"""
+        paths_of_attachments = email_received["attachments"][0][0]
+        paths_to_write = self._parse_email_part(email_received["body"][0][0])[0][1:]
+        assert len(paths_of_attachments) == len(paths_to_write) or len(paths_to_write) == 1 or len(paths_of_attachments) == 0
+        # if path is passed in
+        
+        if len(paths_of_attachments) == len(paths_to_write):
+            for i, path in enumerate(paths_to_write):
+                if os.path.exists(path):
+                    path_to_write = path
+                elif path_to_write:=FileManager.search_exact(path, path=self._file_roots, ignore_type=True, exception=False):
+                    pass
+                elif path_to_write:=FileManager.search_exact(path, path=self._file_roots, ignore_type=False, exception=False):
+                    pass
+                else:
+                    raise AttributeError(f"{path} does not exist")
+                # after absolute path found, return email as attachment
+                path_to_write = os.path.realpath(path_to_write)
+                file_name = os.path.basename(path)
+                #TODO save file
+            response_email_subject = f"Write: {len(paths_to_write)} files complete"
+            response_email_body = f"{len(paths_to_write)} saved"
+            # TODO specify where each file is saved
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
+        elif len(paths_to_write) == 1:
+            if os.path.exists(paths_to_write):
+                path_to_write = paths_to_write
+            elif path_to_write:=FileManager.search_exact(path, path=self._file_roots, ignore_type=True, exception=False):
+                pass
+            elif path_to_write:=FileManager.search_exact(path, path=self._file_roots, ignore_type=False, exception=False):
+                pass
+            else:
+                raise AttributeError(f"{path} does not exist")
+            for path in paths_of_attachments:
+                if os.path.exists(path):
+                    #TODO save
+        # help menu
+        else:
+            # return main options
+            response_email_subject = f"READ: Main Menu"
+            response_email_body = main_menu
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
         pass
         
     def _action_make_request(self, email_received:dict, http_method, http_url, http_header, http_body):
