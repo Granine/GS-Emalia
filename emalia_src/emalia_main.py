@@ -299,7 +299,7 @@ class Emalia():
         @return `:Message` the response email to sender
         """
         main_menu = """Options"""
-        paths_of_attachments = email_received["attachments"][0][0]
+        paths_of_attachments = email_received["attachments"]
         paths_to_write = self._parse_email_part(email_received["body"][0][0])[0][1:]
         assert len(paths_of_attachments) == len(paths_to_write) or len(paths_to_write) == 1 or len(paths_of_attachments) == 0
         # if path is passed in
