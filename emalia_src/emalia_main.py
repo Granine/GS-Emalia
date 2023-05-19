@@ -318,7 +318,7 @@ class Emalia():
                 path_to_write = os.path.realpath(path_to_write)
                 file_name = os.path.basename(path)
                 #TODO save file
-            response_email_subject = f"Write: {len(paths_to_write)} files complete"
+            response_email_subject = f"WRITE: {len(paths_to_write)} files complete"
             response_email_body = f"{len(paths_to_write)} saved"
             # TODO specify where each file is saved
             return self._new_emalia_email(email_received, response_email_subject, response_email_body)
@@ -333,11 +333,12 @@ class Emalia():
                 raise AttributeError(f"{path} does not exist")
             for path in paths_of_attachments:
                 if os.path.exists(path):
+                    pass
                     #TODO save
         # help menu
         else:
             # return main options
-            response_email_subject = f"READ: Main Menu"
+            response_email_subject = f"WRITE: Main Menu"
             response_email_body = main_menu
             return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
         pass
