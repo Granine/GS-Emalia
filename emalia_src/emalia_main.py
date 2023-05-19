@@ -308,7 +308,7 @@ class Emalia():
         """
         pass
     
-    def _action_execute_python(self, email_received:dict, python):
+    def _action_execute_python(self, email_received:dict, python:str):
         """5 Execute a python script in current process by emalia permission
         """
         pass
