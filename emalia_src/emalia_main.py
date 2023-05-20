@@ -294,7 +294,7 @@ class Emalia():
                     
     
     def _action_write_file(self, email_received:dict):
-        """2 write the content of a file by emalia permission
+        """2 place the attachment into a specified location by emalia permission
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:Message` the response email to sender
         """
