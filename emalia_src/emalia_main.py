@@ -381,6 +381,7 @@ class Emalia():
             chat_history = gpt_request.gpt_list_to_chat([email_gpt_request[0][-1]])
             self.logger.info("GPT request queued")
             gpt_response = gpt_request.gpt_request(chat_history, **gpt_settings)
+            # parse request based on response type
             if gpt_response[1] == "chat":
                 gpt_response_string = gpt_response[0]["choices"][0]["message"]["content"]
             else:
