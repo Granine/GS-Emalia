@@ -252,7 +252,7 @@ class Emalia():
         default_worker_functions.update(self.custom_tasks)
         return default_worker_functions
         
-    def _action_manage_emalia(self, email_received:dict, emalia_command:str=""):
+    def _action_manage_emalia(self, email_received:dict, emalia_command:str="")->Message:
         """0 Alter emalia behaviour (settings) by permission
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:dict` the response email to sender
@@ -293,7 +293,7 @@ class Emalia():
             return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
                     
     
-    def _action_write_file(self, email_received:dict):
+    def _action_write_file(self, email_received:dict)->Message:
         """2 place the attachment into a specified location by emalia permission
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:Message` the response email to sender
@@ -359,7 +359,7 @@ class Emalia():
         """
         pass
     
-    def _action_gpt_request(self, email_received:dict):
+    def _action_gpt_request(self, email_received:dict)->Message:
         """7 make gpt request and return result 
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:Message` the response email to sender
