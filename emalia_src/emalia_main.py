@@ -361,16 +361,19 @@ class Emalia():
     
     def _action_gpt_request(self, email_received:dict)->Message:
         """7 make gpt request and return result 
+        setting passed in format of <NAME:VALUE><NAME:VALUE> before or/and after body
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:Message` the response email to sender
         """
         main_menu = """Options"""
         email_gpt_request = self._parse_email_part(email_received["body"][0][0])
         if email_gpt_request:
-            # populate settings
+            # populate settings by extracting in <>
             gpt_settings = {}
             for gpt_setting in email_gpt_request[2]:
+                # setting name
                 key_parsed = gpt_setting.split(":", 1)[0]
+                # setting value
                 value_parsed = gpt_setting.split(":", 1)[0]
                 if key_parsed in ["temperature", "top_p"]:
                     value_parsed = float(value_parsed)
