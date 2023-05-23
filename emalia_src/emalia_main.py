@@ -257,6 +257,7 @@ class Emalia():
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:dict` the response email to sender
         """
+        self.logger.info("manage_emalia: processing")
         main_menu = """Options"""
         response_email_subject = f"MANAGE: complete"
         response_email_body = main_menu
@@ -267,6 +268,7 @@ class Emalia():
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:Message` the response email to sender
         """
+        self.logger.info("read_file: processing")
         main_menu = """Options"""
         path = self._parse_email_part(email_received["body"][0][0])[0][-1]
         # if path is passed in
@@ -298,6 +300,7 @@ class Emalia():
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:Message` the response email to sender
         """
+        self.logger.info("write_file: processing")
         main_menu = """Options"""
         paths_of_attachments = email_received["attachments"]
         paths_to_write = self._parse_email_part(email_received["body"][0][0])[0][1:]
