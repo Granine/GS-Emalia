@@ -365,6 +365,7 @@ class Emalia():
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:Message` the response email to sender
         """
+        self.logger.info("gpt_request: processing")
         main_menu = """Options"""
         email_gpt_request = self._parse_email_part(email_received["body"][0][0])
         # collected but not returned
@@ -378,9 +379,9 @@ class Emalia():
                 key_parsed = gpt_setting.split(":", 1)[0]
                 # setting value
                 value_parsed = gpt_setting.split(":", 1)[0]
-                if key_parsed in ["temperature", "top_p"]:
+                if key_parsed.lower() in ["temperature", "top_p"]:
                     value_parsed = float(value_parsed)
-                elif key_parsed in ["n", "max_tokens", "presence_penalty", "frequency_penalty"]:
+                elif key_parsed.lower() in ["n", "max_tokens", "presence_penalty", "frequency_penalty"]:
                     value_parsed = int(value_parsed)
                 else:
                     warning_message = f"gpt_request: Unknown setting: {key_parsed}"
@@ -389,14 +390,13 @@ class Emalia():
                 gpt_settings[key_parsed] = value_parsed
             # make request
             chat_history = gpt_request.gpt_list_to_chat([email_gpt_request[0][-1]])
-            self.logger.info("gpt_request: GPT request queued")
             gpt_response = gpt_request.gpt_request(chat_history, **gpt_settings)
             # parse request based on response type
             if gpt_response[1] == "chat":
                 gpt_response_string = gpt_response[0]["choices"][0]["message"]["content"]
             else:
                 gpt_response_string = gpt_response[0]["choices"][0]["text"]
-            response_email_subject = f"GPT: request complete"
+            response_email_subject = f"GPT: Request Complete"
             response_email_body = f"{gpt_response_string}"
         else:
             # return main options
