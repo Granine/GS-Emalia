@@ -367,6 +367,9 @@ class Emalia():
         """
         main_menu = """Options"""
         email_gpt_request = self._parse_email_part(email_received["body"][0][0])
+        # collected but not returned
+        # TODO return
+        warning_messages = []
         if email_gpt_request:
             # populate settings by extracting in <>
             gpt_settings = {}
@@ -380,7 +383,9 @@ class Emalia():
                 elif key_parsed in ["n", "max_tokens", "presence_penalty", "frequency_penalty"]:
                     value_parsed = int(value_parsed)
                 else:
-                    self.logger.warning(f"gpt_request: Unknown setting: {key_parsed}")
+                    warning_message = f"gpt_request: Unknown setting: {key_parsed}"
+                    self.logger.warning(warning_message)
+                    warning_messages.append(warning_message)
                 gpt_settings[key_parsed] = value_parsed
             # make request
             chat_history = gpt_request.gpt_list_to_chat([email_gpt_request[0][-1]])
@@ -393,12 +398,11 @@ class Emalia():
                 gpt_response_string = gpt_response[0]["choices"][0]["text"]
             response_email_subject = f"GPT: request complete"
             response_email_body = f"{gpt_response_string}"
-            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
         else:
             # return main options
             response_email_subject = f"GPT: Main Menu"
             response_email_body = main_menu
-            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
+        return self._new_emalia_email(email_received, response_email_subject, response_email_body)
     
     def _action_register_custom_task(self, email_received:dict, task):
         """9 user can store custom tasks (nest multiple or define new)
