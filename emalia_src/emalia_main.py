@@ -379,10 +379,12 @@ class Emalia():
                     value_parsed = float(value_parsed)
                 elif key_parsed in ["n", "max_tokens", "presence_penalty", "frequency_penalty"]:
                     value_parsed = int(value_parsed)
+                else:
+                    self.logger.warning(f"gpt_request: Unknown setting: {key_parsed}")
                 gpt_settings[key_parsed] = value_parsed
             # make request
             chat_history = gpt_request.gpt_list_to_chat([email_gpt_request[0][-1]])
-            self.logger.info("GPT request queued")
+            self.logger.info("gpt_request: GPT request queued")
             gpt_response = gpt_request.gpt_request(chat_history, **gpt_settings)
             # parse request based on response type
             if gpt_response[1] == "chat":
