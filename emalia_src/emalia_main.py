@@ -347,17 +347,17 @@ class Emalia():
             return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
         pass
         
-    def _action_make_request(self, email_received:dict, http_method, http_url, http_header, http_body):
+    def _action_make_request(self, email_received:dict, http_method, http_url, http_header, http_body)->Message:
         """3 make an external request by emalia permission
         """
         pass
     
-    def _action_execute_powershell(self, email_received:dict, command):
+    def _action_execute_powershell(self, email_received:dict, command)->Message:
         """4 Execute a powershell command by emalia permission
         """
         pass
     
-    def _action_execute_python(self, email_received:dict, python:str):
+    def _action_execute_python(self, email_received:dict, python:str)->Message:
         """5 Execute a python script in current process by emalia permission
         """
         pass
