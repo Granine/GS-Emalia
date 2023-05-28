@@ -150,7 +150,7 @@ class EmailManager():
         outgoing_email["Subject"] = email_subject
         body = Message()
         body.set_type(main_body_type)
-        body.set_payload(email_body)
+        body.set_payload(email_body, "utf-8")
         outgoing_email.attach(body)
         # handle payload
         if isinstance(attachments, str): attachments = [attachments]
@@ -320,7 +320,7 @@ class EmailManager():
         @exception `:AssertionError` if file is not a valid email format needed to understand email and make reply
         """
         assert parsed_email["sender"] or parsed_email["return_path"]
-        assert isinstance(parsed_email["subject"])
+        assert isinstance(parsed_email["subject"], str)
         # multiple body in email, check each is tuple with type at right
         for body in parsed_email["body"]:
             assert isinstance(body, tuple)
@@ -338,7 +338,7 @@ class EmailManager():
         pass
         
     def store_email_to_csv(self, email_received:Message|str, path:str, action:str, comment:str=""):
-        """Save full email content
+        """Save full email content to csv (commonly used to track history)
         @param `email_received:Message|dict` parse or unparsed email
         @param `path:str` file location to save, create if dne
         @param `action:str` "received"|"sent", email type
@@ -356,11 +356,12 @@ class EmailManager():
             email_received = self.parse_email(email_received)
         # prepare for csv header insertion
         email_received_appended = email_received.copy()
+        email_received_appended["body"] = str(email_received_appended["body"])
         email_received_appended["action"] = action
         email_received_appended["comment"] = comment
 
         # Append the email to the CSV file
-        with open(path, 'a', newline='', encoding="utf-8-sig") as csvfile:
+        with open(path, 'a', newline='', encoding="utf-8") as csvfile:
             # col = parsed email keys
             fieldnames = email_received_appended.keys()
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)

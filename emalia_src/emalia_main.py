@@ -45,7 +45,7 @@ class Emalia():
     # =====================Configurable Settings=========================
     # should not be changed mid-execution or may error out
     _max_response_per_cycle = 3
-    _max_send_count = 1 # max email emalia can send per instance, <0 for infinite
+    _max_send_count = -1 # max email emalia can send per instance, <0 for infinite
     _file_roots = f"{__file__}/../../" # should point to GS-Emalia directory
     _save_path = f"{__file__}/../../history.csv" # a history file with .csv extension, create if DNE 
     # =====================Runtime Variable=========================
@@ -131,7 +131,7 @@ class Emalia():
                     user_command = re.search("^\w*", unseen_email_parsed["body"][0][0]).group().lower() # normalize to lower case
                     # if server freeze, force all command to system manager
                     if self.freeze_server:
-                        response_email = self.task_list[0]["function"](unseen_email_parsed)
+                        response_email = self.task_list["0"]["function"](unseen_email_parsed)
                     elif user_command in self.task_list.keys():
                         response_email = self.task_list[user_command]["function"](unseen_email_parsed)
                     else:
@@ -140,9 +140,10 @@ class Emalia():
                     self.logger.exception(f"Error: {user_command} failed")
                     response_email = self._new_emalia_email(unseen_email_parsed, f"Error: {err}", traceback.format_exc())
             if unseen_email or response_email:
-            # freeze if conditions not met
+            # freeze if conditions are not meet
                 if (self.statistics["sent"] >= self._max_send_count) and (self._max_send_count >= 0):
                     self.freeze_server = True
+                    self.logger.info("Server frozen")
                 # reply based on action
                 try:
                     self.email_handler.send_email(response_email)
@@ -187,9 +188,9 @@ class Emalia():
         return self.email_handler.new_email(target_email=target_email, email_subject=email_subject, email_body=email_body, attachments=attachments)
     
     def _parse_email_part(self, email_body:str)->tuple:
-        """Return a tuple of 3 that contains (Raw body part, [] options, <> options) make sure to strip reply section before requesting
+        """Return a tuple of 3 that contains (Raw body part (space or [] or <> as break), [] options ([] as break), <> options (<> as break)) make sure to strip reply section before requesting
         @param `email_body:str` the email body to be parse, must be plain string, not html or rich
-        @return `:tuple of size 3` 
+        @return `:tuple len(3) of list`  the parsed email body, [0][0] will be command, [0][1] first word and so on
         response will not contain <> or [], will escape with "\". So <123> with return 123, \<123\> will not
         Requires brackets to be paired, there cannot be floating brackets
         """
@@ -251,11 +252,12 @@ class Emalia():
         default_worker_functions.update(self.custom_tasks)
         return default_worker_functions
         
-    def _action_manage_emalia(self, email_received:dict, emalia_command:str=""):
+    def _action_manage_emalia(self, email_received:dict, emalia_command:str="")->Message:
         """0 Alter emalia behaviour (settings) by permission
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:dict` the response email to sender
         """
+        self.logger.info("manage_emalia: processing")
         main_menu = """Options"""
         response_email_subject = f"MANAGE: complete"
         response_email_body = main_menu
@@ -264,8 +266,9 @@ class Emalia():
     def _action_read_file(self, email_received:dict)->Message:
         """1 find one file and attach it as attachment to response email by emalia permission and return it
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
-        @return `:dict` the response email to sender
+        @return `:Message` the response email to sender
         """
+        self.logger.info("read_file: processing")
         main_menu = """Options"""
         path = self._parse_email_part(email_received["body"][0][0])[0][-1]
         # if path is passed in
@@ -292,62 +295,122 @@ class Emalia():
             return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
                     
     
-    def _action_write_file(self, email_received:dict, content:bytes, path:str="DEFAULT"):
-        """2 write the content of a file by emalia permission
+    def _action_write_file(self, email_received:dict)->Message:
+        """2 place the attachment into a specified location by emalia permission
+        @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
+        @return `:Message` the response email to sender
         """
+        self.logger.info("write_file: processing")
+        main_menu = """Options"""
+        paths_of_attachments = email_received["attachments"]
+        paths_to_write = self._parse_email_part(email_received["body"][0][0])[0][1:]
+        assert len(paths_of_attachments) == len(paths_to_write) or len(paths_to_write) == 1 or len(paths_of_attachments) == 0
+        # if path is passed in
+        
+        if paths_of_attachments:
+            # if only one path, duplicate into array
+            if len(paths_to_write) == 1: 
+                # if not dir, force to get level above
+                if not os.path.isdir(paths_to_write[0]):
+                    self.logger.info(f"WRITE: input path {path} not dir, normalizing")
+                    paths_to_write = [os.path.dirname(paths_to_write[0])]
+                paths_to_write = paths_to_write * len(paths_of_attachments)
+            # for each attachment, save to target location
+            for i, path in enumerate(paths_to_write):
+                if os.path.exists(path):
+                    if os.path.isdir(path):
+                        path_to_write = path
+                    # not directory, get level above
+                    else:
+                        self.logger.info(f"WRITE: input path {path} not dir, normalizing")
+                        path_to_write = os.path.dirname(path)
+                elif path_to_write:=FileManager.search_exact(path, path=self._file_roots, target_type="dir", ignore_type=True, exception=False):
+                    pass
+                elif path_to_write:=FileManager.search_exact(path, path=self._file_roots, target_type="dir", ignore_type=False, exception=False):
+                    pass
+                else:
+                    raise AttributeError(f"{path} does not exist")
+                # after absolute path found, return email as attachment
+                path_to_write = os.path.realpath(path_to_write)
+                file_name = os.path.basename(path)
+                #TODO save file
+            response_email_subject = f"WRITE: {len(paths_to_write)} files complete"
+            response_email_body = f"{len(paths_to_write)} saved"
+            # TODO specify where each file is saved
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
+        
+        # help menu
+        else:
+            # return main options
+            response_email_subject = f"WRITE: Main Menu"
+            response_email_body = main_menu
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
         pass
         
-    def _action_make_request(self, email_received:dict, http_method, http_url, http_header, http_body):
+    def _action_make_request(self, email_received:dict, http_method, http_url, http_header, http_body)->Message:
         """3 make an external request by emalia permission
         """
         pass
     
-    def _action_execute_powershell(self, email_received:dict, command):
+    def _action_execute_powershell(self, email_received:dict, command)->Message:
         """4 Execute a powershell command by emalia permission
         """
         pass
     
-    def _action_execute_python(self, email_received:dict, python):
+    def _action_execute_python(self, email_received:dict, python:str)->Message:
         """5 Execute a python script in current process by emalia permission
         """
         pass
     
-    def _action_gpt_request(self, email_received:dict):
+    def _action_gpt_request(self, email_received:dict)->Message:
         """7 make gpt request and return result 
+        setting passed in format of <NAME:VALUE><NAME:VALUE> before or/and after body
+        @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
+        @return `:Message` the response email to sender
         """
+        self.logger.info("gpt_request: processing")
         main_menu = """Options"""
         email_gpt_request = self._parse_email_part(email_received["body"][0][0])
+        # collected but not returned
+        # TODO return
+        warning_messages = []
         if email_gpt_request:
-            # populate settings
+            # populate settings by extracting in <>
             gpt_settings = {}
             for gpt_setting in email_gpt_request[2]:
+                # setting name
                 key_parsed = gpt_setting.split(":", 1)[0]
+                # setting value
                 value_parsed = gpt_setting.split(":", 1)[0]
-                if key_parsed in ["temperature", "top_p"]:
+                if key_parsed.lower() in ["temperature", "top_p"]:
                     value_parsed = float(value_parsed)
-                elif key_parsed in ["n", "max_tokens", "presence_penalty", "frequency_penalty"]:
+                elif key_parsed.lower() in ["n", "max_tokens", "presence_penalty", "frequency_penalty"]:
                     value_parsed = int(value_parsed)
+                else:
+                    warning_message = f"gpt_request: Unknown setting: {key_parsed}"
+                    self.logger.warning(warning_message)
+                    warning_messages.append(warning_message)
                 gpt_settings[key_parsed] = value_parsed
             # make request
             chat_history = gpt_request.gpt_list_to_chat([email_gpt_request[0][-1]])
             gpt_response = gpt_request.gpt_request(chat_history, **gpt_settings)
+            # parse request based on response type
             if gpt_response[1] == "chat":
                 gpt_response_string = gpt_response[0]["choices"][0]["message"]["content"]
             else:
                 gpt_response_string = gpt_response[0]["choices"][0]["text"]
-            response_email_subject = f"GPT: request complete"
+            response_email_subject = f"GPT: Request Complete"
             response_email_body = f"{gpt_response_string}"
-            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
         else:
             # return main options
             response_email_subject = f"GPT: Main Menu"
             response_email_body = main_menu
-            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
+        return self._new_emalia_email(email_received, response_email_subject, response_email_body)
     
     def _action_register_custom_task(self, email_received:dict, task):
         """9 user can store custom tasks (nest multiple or define new)
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
-        @return `:dict` the response email to sender
+        @return `:Message` the response email to sender
         """
         self.custom_tasks = {}
         pass
@@ -367,9 +430,14 @@ if __name__ == "__main__":
     main_loop_thread = threading.Thread(target=emalia_instance.main_loop)
     main_loop_thread.start()
     # exit emalia and external controls
-    supported_command = ["stop"]
-    while selection:=input("Command:\n") not in supported_command:
-        print(f"Input {selection} is not a valid command from list: {supported_command}")
+    supported_command = ["stop", "freeze"]
+    while selection:=input("Command:\n"):
+        if selection.lower() == "stop":
+            break
+        elif selection.lower() == "freeze":
+            emalia_instance.freeze_server = True
+        else:
+            print(f"Input {selection} is not a valid command from list: {supported_command}")
     emalia_instance.break_loop()
     main_loop_thread.join()
     print("Tasks complete")
