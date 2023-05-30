@@ -354,11 +354,13 @@ class Emalia():
     
     def _action_execute_powershell(self, email_received:dict, command)->Message:
         """4 Execute a powershell command by emalia permission
+        @return `:Message` the response email to sender
         """
         pass
     
     def _action_execute_python(self, email_received:dict, python:str)->Message:
         """5 Execute a python script in current process by emalia permission
+        @return `:Message` the response email to sender
         """
         pass
     
