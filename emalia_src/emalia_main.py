@@ -350,6 +350,7 @@ class Emalia():
         
     def _action_make_request(self, email_received:dict, http_method, http_url, http_header, http_body)->Message:
         """3 make an external request by emalia permission
+        @return `:Message` the response email to sender
         """
         pass
     
