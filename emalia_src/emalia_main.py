@@ -443,7 +443,7 @@ if __name__ == "__main__":
             emalia_instance.freeze_server = True
         else:
             print(f"Input {selection} is not a valid command from list: {supported_command}")
-    emalia_instance.break_loop()
+    emalia_instance.break_loop() # safe break that only end when all tasks are complete
     main_loop_thread.join()
     print("Tasks complete")
         
