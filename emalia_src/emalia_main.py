@@ -435,6 +435,7 @@ if __name__ == "__main__":
     main_loop_thread.start()
     # exit emalia and external controls
     supported_command = ["stop", "freeze"]
+    # manu input detection
     while selection:=input("Command:\n"):
         if selection.lower() == "stop":
             break
