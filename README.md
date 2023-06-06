@@ -51,6 +51,8 @@ The process responsible for email management like reading email, sending email
       - () enable/disable functions
     - () Attach basic footer to emails
 - Stage Piston 
+    - () EmailManager
+      - () Parse reply/body
     - () Maintain conversation
       - () have the ability to read response
     - () Security

@@ -1,14 +1,16 @@
-from EmailManager import EmailManager
-import FileManager
 import threading
 import time
 from datetime import datetime
 import os
-from email.message import Message # email template
+from email.message import Message # email template for sending
 import re
 import logging
 import traceback
 import sys
+# main support
+from EmailManager import EmailManager
+import FileManager
+# worker
 import gpt_request
 
 class Emalia():
@@ -424,7 +426,6 @@ class Emalia():
         """
         pass
 
-    
 if __name__ == "__main__":
     """Allow one button trigger of emalia mainloop, testing for now, may change to terminal configurable later"""
     #TODO support comamndline trigger of emalia_main.py
