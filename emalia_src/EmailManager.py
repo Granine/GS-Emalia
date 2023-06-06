@@ -25,9 +25,7 @@ class EmailManager():
     smtp: login ~ 1, send ~ 0.3
     Combined: unseen_emails ~ 1.7, fetch_email ~ 1.7/email, parse ~ 0,label ~ 1+0.3/email
     TODO: support reply to emails
-    TODO: support passwording
-    TODO: support saving attachments
-    TODO: support common smtp and imap
+    TODO: support common smtp and imap other than gmail
     """
     def __init__(self, enable_history:bool=True, attachment_path:str="", HANDLER_EMAIL:str="", HANDLER_PASSWORD:str="", HANDLER_SMTP:str|dict="smtp.gmail.com", HANDLER_IMAP:str|dict="imap.gmail.com"):
         """initialize email manager service
@@ -290,7 +288,8 @@ class EmailManager():
                             os.mkdir(folder_name)
                         filepath = os.path.join(folder_name, file_name)
                         # download attachment and save it
-                        open(filepath, "wb").write(part.get_payload(decode=True))
+                        with open(filepath, "wb") as attach_f:
+                            attach_f.write(part.get_payload(decode=True))
         else:
             body.append((email.get_payload(decode=True).decode("utf-8-sig"), email.get_content_type().split("/")[1]))
         if email["Sender"]:
