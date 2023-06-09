@@ -82,6 +82,7 @@ class Emalia():
         @param HANDLER_SMTP:str|dict SMTP default supports gmail, will attempt to read from env var if empty
         @param HANDLER_IMAP:str|dict IMAP default supports gmail, will attempt to read from env var if empty
         """
+        # check permission
         if isinstance(permission, str):
             if permission.lower() == "default":
                 self.permission = {"action": ["read", "write"], "range": 1}
@@ -91,6 +92,8 @@ class Emalia():
             self.permission = permission
         else:
             raise AttributeError("Unknown permission value")
+        
+        # check and attach logger
         if not logger:
             self.logger = logging.Logger(name=__file__, level=logging.INFO)
             console_handler = logging.StreamHandler(sys.stdout)
@@ -98,7 +101,7 @@ class Emalia():
             self.logger.addHandler(console_handler)
         else:
             self.logger = logger
-        self.PID = os.getpid()
+        # load constants
         self._setting_location = setting_location
         # load settings
         self.load_settings(self._setting_location)
@@ -111,7 +114,7 @@ class Emalia():
         self.email_handler = EmailManager(HANDLER_PASSWORD=self.HANDLER_PASSWORD, HANDLER_EMAIL=self.HANDLER_EMAIL, HANDLER_SMTP=self.HANDLER_SMTP, HANDLER_IMAP=self.HANDLER_IMAP)
        
     def main_loop(self, scan_interval:float=5.0):
-        """Start the email listener
+        """Start the email listener and responding system
         @param `scan_interval:float` the time to pause between each email scan session, if processing tie (request time >= scan_interval, there will be no pause)
         @return `:datetime` time of main_loop completion
         Info: Only one main_loop or async_main_loop can run, all other calls will not create new Emalia loops. Please create new Emalia Object to do such task
@@ -119,16 +122,17 @@ class Emalia():
         self.PID = os.getpid()
         self.server_running = True
         self.server_start_time = datetime.now()
-        # infinity loop unless self.server_running is changed in loop or from other functions in separate process
+        # init statistics
         self.statistics = {"sent": 0, "received": 0}
+        # infinity loop unless self.server_running is changed in loop or from other functions in separate process
         while self.server_running:
             loop_start_time = datetime.now()
             response_email = None
             try:
                 # get unseen_emails
                 unseen_email_ids = self.email_handler.unseen_emails()
-                # fetch email by id
                 
+                # fetch email by id
                 if unseen_email_ids:
                     unseen_email_id_selected = unseen_email_ids[0]
                     unseen_email = self.email_handler.fetch_email(unseen_email_id_selected)
