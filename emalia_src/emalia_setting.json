@@ -9,6 +9,6 @@
     "vip_list": {},
     "custom_tasks": {},
     "_max_send_count": -1,
-    "_file_roots": "{__file__}/../../",
-    "_save_path": "{__file__}/../../history.csv"
+    "_file_roots": "",
+    "_save_path": ""
 }
