@@ -46,7 +46,6 @@ class Emalia():
     custom_tasks = {} # user defined tasks on the run
     # =====================Configurable Settings=========================
     # should not be changed mid-execution or may error out
-    _max_response_per_cycle = 3
     _max_send_count = -1 # max email emalia can send per instance, <0 for infinite
     _file_roots = f"{__file__}/../../" # should point to GS-Emalia directory
     _save_path = f"{__file__}/../../history.csv" # a history file with .csv extension, create if DNE 
@@ -55,11 +54,17 @@ class Emalia():
     server_start_time:datetime = None # tracks the start time of last server
     logger = None
 
-    def load_setting(self, _local_setting_location:str):
-        with open(self.setting_location, "r") as f:
-            setting = json.load(f)
-        if setting["permission"] in setting:
-            self. 
+    def load_setting(self, prefix:str=""):
+        """
+        Load setting from setting_location
+        @param prefix (str, optional): prefix to add to each setting name
+        """
+        with open(self._setting_location, "r") as f:
+            settings = json.load(f)
+            for key, value in settings.items():
+                # write value to same name class variable
+                setattr(self, f"{prefix}{key}", value)
+
     
     def __init__(self, permission:str="default", setting_location:str="", HANDLER_EMAIL:str="", HANDLER_PASSWORD:str="", HANDLER_SMTP:str|dict="smtp.gmail.com", HANDLER_IMAP:str|dict="imap.gmail.com", logger:logging.Logger=None):
         """Create a email service robot instance. Make sure you run mainloop to start service
