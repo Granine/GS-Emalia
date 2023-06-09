@@ -106,12 +106,12 @@ class Emalia():
         # load settings
         self.load_settings(self._setting_location)
         # overide setting file if provided
-        self.HANDLER_EMAIL = HANDLER_EMAIL if HANDLER_EMAIL else os.environ.get("HANDLER_EMAIL")
-        self.HANDLER_PASSWORD = HANDLER_PASSWORD if HANDLER_PASSWORD else os.environ.get("HANDLER_PASSWORD")
-        self.HANDLER_SMTP = HANDLER_SMTP if HANDLER_SMTP else os.environ.get("HANDLER_SMTP")
-        self.HANDLER_IMAP = HANDLER_IMAP if HANDLER_IMAP else os.environ.get("HANDLER_IMAP")
+        self._HANDLER_EMAIL = HANDLER_EMAIL if HANDLER_EMAIL else os.environ.get("HANDLER_EMAIL")
+        self._HANDLER_PASSWORD = HANDLER_PASSWORD if HANDLER_PASSWORD else os.environ.get("HANDLER_PASSWORD")
+        self._HANDLER_SMTP = HANDLER_SMTP if HANDLER_SMTP else os.environ.get("HANDLER_SMTP")
+        self._HANDLER_IMAP = HANDLER_IMAP if HANDLER_IMAP else os.environ.get("HANDLER_IMAP")
         
-        self.email_handler = EmailManager(HANDLER_PASSWORD=self.HANDLER_PASSWORD, HANDLER_EMAIL=self.HANDLER_EMAIL, HANDLER_SMTP=self.HANDLER_SMTP, HANDLER_IMAP=self.HANDLER_IMAP)
+        self.email_handler = EmailManager(HANDLER_PASSWORD=self._HANDLER_PASSWORD, HANDLER_EMAIL=self._HANDLER_EMAIL, HANDLER_SMTP=self._HANDLER_SMTP, HANDLER_IMAP=self._HANDLER_IMAP)
        
     def main_loop(self, scan_interval:float=5.0):
         """Start the email listener and responding system
