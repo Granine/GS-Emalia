@@ -49,6 +49,11 @@ class Emalia():
     _max_send_count = -1 # max email emalia can send per instance, <0 for infinite
     _file_roots = f"{__file__}/../../" # should point to GS-Emalia directory
     _save_path = f"{__file__}/../../history.csv" # a history file with .csv extension, create if DNE 
+    _GPT_API_KEY = ""
+    _HANDLER_EMAIL = ""
+    _HANDLER_PASSWORD = ""
+    _HANDLER_SMTP = ""
+    _HANDLER_IMAP = ""
     # =====================Runtime Variable=========================
     # do not change unless confident
     server_start_time:datetime = None # tracks the start time of last server
@@ -430,7 +435,7 @@ class Emalia():
                 gpt_settings[key_parsed] = value_parsed
             # make request
             chat_history = gpt_request.gpt_list_to_chat([email_gpt_request[0][-1]])
-            gpt_response = gpt_request.gpt_request(chat_history, **gpt_settings)
+            gpt_response = gpt_request.gpt_request(chat_history, connection_token=self._GPT_API_KEY, **gpt_settings)
             # parse request based on response type
             if gpt_response[1] == "chat":
                 gpt_response_string = gpt_response[0]["choices"][0]["message"]["content"]
