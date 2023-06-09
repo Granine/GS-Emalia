@@ -54,7 +54,7 @@ class Emalia():
     server_start_time:datetime = None # tracks the start time of last server
     logger = None
 
-    def load_setting(self, prefix:str=""):
+    def load_settings(self, prefix:str=""):
         """
         Load setting from setting_location
         @param prefix (str, optional): prefix to add to each setting name
@@ -64,9 +64,8 @@ class Emalia():
             for key, value in settings.items():
                 # write value to same name class variable
                 setattr(self, f"{prefix}{key}", value)
-
     
-    def __init__(self, permission:str="default", setting_location:str="", HANDLER_EMAIL:str="", HANDLER_PASSWORD:str="", HANDLER_SMTP:str|dict="smtp.gmail.com", HANDLER_IMAP:str|dict="imap.gmail.com", logger:logging.Logger=None):
+    def __init__(self, permission:str="default", setting_location:str="", HANDLER_EMAIL:str="", HANDLER_PASSWORD:str="", HANDLER_SMTP:str|dict="", HANDLER_IMAP:str|dict="", logger:logging.Logger=None):
         """Create a email service robot instance. Make sure you run mainloop to start service
         @param permission (str, optional): What Emalia is allowed to do to local file
             {"action": ACTION, range": RANGE}
@@ -100,11 +99,16 @@ class Emalia():
         else:
             self.logger = logger
         self.PID = os.getpid()
+        self._setting_location = setting_location
+        # load settings
+        self.load_settings(self._setting_location)
+        # overide setting file if provided
         self.HANDLER_EMAIL = HANDLER_EMAIL if HANDLER_EMAIL else os.environ.get("HANDLER_EMAIL")
         self.HANDLER_PASSWORD = HANDLER_PASSWORD if HANDLER_PASSWORD else os.environ.get("HANDLER_PASSWORD")
-        self._setting_location = setting_location
-        self.load_setting(self._setting_location)
-        self.email_handler = EmailManager(HANDLER_PASSWORD=self.HANDLER_PASSWORD, HANDLER_EMAIL=self.HANDLER_EMAIL, HANDLER_SMTP=HANDLER_SMTP, HANDLER_IMAP=HANDLER_IMAP)
+        self.HANDLER_SMTP = HANDLER_SMTP if HANDLER_SMTP else os.environ.get("HANDLER_SMTP")
+        self.HANDLER_IMAP = HANDLER_IMAP if HANDLER_IMAP else os.environ.get("HANDLER_IMAP")
+        
+        self.email_handler = EmailManager(HANDLER_PASSWORD=self.HANDLER_PASSWORD, HANDLER_EMAIL=self.HANDLER_EMAIL, HANDLER_SMTP=self.HANDLER_SMTP, HANDLER_IMAP=self.HANDLER_IMAP)
        
     def main_loop(self, scan_interval:float=5.0):
         """Start the email listener
