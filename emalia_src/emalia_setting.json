@@ -1,0 +1,14 @@
+{
+    "HANDLER_EMAIL": "@gmail.com",
+    "HANDLER_PASSWORD": "",
+    "GPT_API_KEY": "",
+    "GPTAUTHENTICATION_CONNTOKEN": "",
+    "GPTAUTHENTICATION_ORGTOKEN": "",
+    "instance_name": "Emalia",
+    "permission": {},
+    "vip_list": {},
+    "custom_tasks": {},
+    "_max_send_count": -1,
+    "_file_roots": "{__file__}/../../",
+    "_save_path": "{__file__}/../../history.csv"
+}
