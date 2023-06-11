@@ -54,7 +54,7 @@ class Emalia():
     _HANDLER_PASSWORD = ""
     _HANDLER_SMTP = ""
     _HANDLER_IMAP = ""
-    # =====================Runtime Variable=========================
+    # =======================Runtime Variable=========================
     # do not change unless confident
     server_start_time:datetime = None # tracks the start time of last server
     logger = None
