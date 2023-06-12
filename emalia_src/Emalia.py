@@ -37,6 +37,7 @@ class Emalia():
     """
     # ==================Hot-edit Options==========================
     # can modify anytime, even externally
+    
     instance_name:str = "Emalia" # name of the service robot, Emalia is her default name
     server_running:bool = False # if True, a server is running, set to false will stop server at next loop
     freeze_server:bool = False # if True, will temporarily stop tasks execution except emalia_manager. 
@@ -46,14 +47,16 @@ class Emalia():
     custom_tasks = {} # user defined tasks on the run
     # =====================Configurable Settings=========================
     # should not be changed mid-execution or may error out
-    _max_send_count = -1 # max email emalia can send per instance, <0 for infinite
-    _file_roots = f"{__file__}/../../" # should point to GS-Emalia directory
-    _save_path = f"{__file__}/../../history.csv" # a history file with .csv extension, create if DNE 
-    _GPT_API_KEY = ""
-    _HANDLER_EMAIL = ""
-    _HANDLER_PASSWORD = ""
-    _HANDLER_SMTP = ""
-    _HANDLER_IMAP = ""
+    # It is better is user update settings file instead of directly update here, setting file "FILE" are stored in settings file
+    _setting_location = f"{__file__}/../emalia_setting.json"
+    _max_send_count = -1 # FILE max email emalia can send per instance, <0 for infinite
+    _file_roots = f"{__file__}/../../" # FILE should point to GS-Emalia directory
+    _save_path = f"{__file__}/../../history.csv" # FILE a history file with .csv extension, create if DNE 
+    _GPT_API_KEY = "" # FILE
+    _HANDLER_EMAIL = "" # FILE
+    _HANDLER_PASSWORD = "" # FILE
+    _HANDLER_SMTP = "" # FILE
+    _HANDLER_IMAP = "" # FILE
     # =======================Runtime Variable=========================
     # do not change unless confident
     server_start_time:datetime = None # tracks the start time of last server
