@@ -163,7 +163,10 @@ class Emalia():
                     user_command = re.search("^\w*", unseen_email_parsed["body"][0][0]).group().lower() # normalize to lower case
                     # if server freeze, force all command to system manager
                     if self.freeze_server:
+                        # "0" = system manager
                         response_email = self.task_list["0"]["function"](unseen_email_parsed)
+                    # If user have valid key, use that key's function
+                    # TODO update the accepted value to task_list[X]["trigger"]
                     elif user_command in self.task_list.keys():
                         response_email = self.task_list[user_command]["function"](unseen_email_parsed)
                     else:
@@ -260,7 +263,7 @@ class Emalia():
         """stores Worker function list, access keys and corresponding action functions
         TODO: Redesign task_list so it is more concise
         """
-        # keys must be lower case!
+        # keys must be lower case! trigger is not case sensitive
         default_worker_functions = {
             "0": {"function": self._action_manage_emalia, 
                 "name":"System Settings", 
@@ -311,7 +314,7 @@ class Emalia():
         default_worker_functions.update(self.custom_tasks)
         return default_worker_functions
         
-    def _action_manage_emalia(self, email_received:dict, emalia_command:str="")->Message:
+    def _action_manage_emalia(self, email_received:dict)->Message:
         """0 Alter emalia behaviour (settings) by permission
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:dict` the response email to sender
