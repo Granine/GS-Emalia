@@ -1,4 +1,5 @@
 import os
+import mimetypes
 """Functions to perform file operation
 """
 
@@ -124,3 +125,39 @@ def search_exact(search_string:str, path=os.curdir, target_type="all", ignore_ty
             raise FileNotFoundError("More than 1 file found, use search_all instead")
         else:
             return ""
+
+
+def get_file_info(path:str, block:list):
+    info = {}
+    
+    try:
+        # Check if file exists
+        if not os.path.exists(path):
+            raise FileNotFoundError("File not found")
+        
+        # Get file size
+        size = os.path.getsize(path)
+        info['size'] = size
+
+        # Get file extension
+        ext = os.path.splitext(path)[1].lower()
+        info['extension'] = ext
+        
+        # Get the file type
+        type_info = mimetypes.guess_type(path)
+        if type_info[0]:
+            info['type'] = type_info[0]
+
+        # Get the encoding
+        if type_info[1]:
+            info['encoding'] = type_info[1]
+
+    except Exception as e:
+        info['error'] = str(e)
+
+    # Remove keys from block list
+    for key in block:
+        if key in info:
+            del info[key]
+            
+    return info
