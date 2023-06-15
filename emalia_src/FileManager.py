@@ -128,6 +128,8 @@ def search_exact(search_string:str, path=os.curdir, target_type="all", ignore_ty
 
 
 def get_file_info(path:str, block:list):
+    """Get information about a file or directory
+    """
     info = {}
     
     try:
