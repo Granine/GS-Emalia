@@ -127,8 +127,11 @@ def search_exact(search_string:str, path=os.curdir, target_type="all", ignore_ty
             return ""
 
 
-def get_file_info(path:str, block:list):
+def get_file_info(path:str, block:list)->dict:
     """Get information about a file or directory
+    @param "path:str" path to file or directory
+    @param "block:list" list of keys to block from being returned
+    @return ":dict" dictionary of information about the file or directory
     """
     info = {}
     
