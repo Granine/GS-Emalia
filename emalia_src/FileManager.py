@@ -132,6 +132,7 @@ def get_file_info(path:str, block:list)->dict:
     @param "path:str" path to file or directory
     @param "block:list" list of keys to block from being returned
     @return ":dict" dictionary of information about the file or directory
+    Currently returning information: size, extension, type, encoding, error (None if none)
     """
     info = {}
     
@@ -157,6 +158,7 @@ def get_file_info(path:str, block:list)->dict:
         if type_info[1]:
             info['encoding'] = type_info[1]
 
+        info['error'] = None
     except Exception as e:
         info['error'] = str(e)
 
