@@ -47,7 +47,8 @@ class Emalia():
     custom_tasks = {} # user defined tasks on the run
     # =====================Configurable Settings=========================
     # should not be changed mid-execution or may error out
-    # It is better is user update settings file instead of directly update here, setting file "FILE" are stored in settings file
+    # It is better is user update settings file instead of directly update here
+    # setting labelled "FILE" are stored in settings file
     _setting_location = f"{__file__}/../emalia_setting.json"
     _max_send_count = -1 # FILE max email emalia can send per instance, <0 for infinite
     _file_roots = f"{__file__}/../../" # FILE should point to GS-Emalia directory
