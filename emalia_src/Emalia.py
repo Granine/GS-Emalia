@@ -35,9 +35,10 @@ class Emalia():
         
         9. custom tasks: CUSTOM/9 [task]: store custom tasks, one can run with their custom command
     """
+    # It is better to update settings file instead of directly update here
+    # setting labelled "FILE" are stored in settings file
     # ==================Hot-edit Options==========================
     # can modify anytime, even externally
-    
     instance_name:str = "Emalia" # name of the service robot, Emalia is her default name
     server_running:bool = False # if True, a server is running, set to false will stop server at next loop
     freeze_server:bool = False # if True, will temporarily stop tasks execution except emalia_manager. 
@@ -45,10 +46,10 @@ class Emalia():
     permission = {} # holds information regarding what the user can/cannot access
     vip_list = {} # a list of senders with special permission
     custom_tasks = {} # user defined tasks on the run
+    
     # =====================Configurable Settings=========================
     # should not be changed mid-execution or may error out
-    # It is better is user update settings file instead of directly update here
-    # setting labelled "FILE" are stored in settings file
+
     _setting_location = f"{__file__}/../emalia_setting.json"
     _max_send_count = -1 # FILE max email emalia can send per instance, <0 for infinite
     _file_roots = f"{__file__}/../../" # FILE should point to GS-Emalia directory
