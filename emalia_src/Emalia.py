@@ -133,7 +133,7 @@ class Emalia():
         self.server_running = True
         self.server_start_time = datetime.now()
         # init statistics
-        self.statistics = {"sent": 0, "received": 0}
+        self.statistics = {"sent": 0, "received": 0, "on_time": self.server_start_time}
         # infinity loop unless self.server_running is changed in loop or from other functions in separate process
         while self.server_running:
             loop_start_time = datetime.now()
