@@ -339,7 +339,7 @@ class Emalia():
         @return `:Message` the response email to sender
         """
         self.logger.info("read_file: processing")
-        main_menu = """Options"""
+        main_menu = """Retrieve file stored on emalia server with commands.\n Format: [path], both relative and complete path are supported."""
         path = self._parse_email_part(email_received["body"][0][0])[0][-1]
         # if path is passed in
         if path:
