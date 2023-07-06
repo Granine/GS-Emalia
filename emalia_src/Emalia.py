@@ -272,6 +272,11 @@ class Emalia():
         """
         # keys must be lower case! trigger is not case sensitive
         default_worker_functions = {
+            "?": {"function": self._action_get_help, 
+                "name":"Get help", 
+                "trigger": ["?", "help", ""], 
+                "description": "Get general help on how to use emalia", 
+                "help": ""},
             "0": {"function": self._action_manage_emalia, 
                 "name":"System Settings", 
                 "trigger": ["0", "manage", f"{self.instance_name}"], 
