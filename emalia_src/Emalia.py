@@ -325,6 +325,19 @@ class Emalia():
         }
         default_worker_functions.update(self.custom_tasks)
         return default_worker_functions
+    
+    def _action_get_help(self, email_received:dict)->Message:
+        """Get help on how to use emalia
+        @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
+        @return `:dict` the response email to sender
+        """
+        self.logger.info("get_help: processing")
+        main_menu = ""
+        for key, value in self.task_list.items():
+            main_menu += f"{key}: {value['name']}\n"
+        response_email_subject = f"HELP: complete"
+        response_email_body = main_menu
+        return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path]
         
     def _action_manage_emalia(self, email_received:dict)->Message:
         """0 Alter emalia behaviour (settings) by permission
@@ -333,7 +346,7 @@ class Emalia():
         """
         self.logger.info("manage_emalia: processing")
         main_menu = """Options"""
-        response_email_subject = f"MANAGE: complete"
+        response_email_subject = f"HELP: complete"
         response_email_body = main_menu
         return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
     
