@@ -353,7 +353,7 @@ class Emalia():
     def _action_read_file(self, email_received:dict)->Message:
         """1 find one file and attach it as attachment to response email by emalia permission and return it
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
-            Format: 
+            Body format: [path], both relative and complete path are supported.
         @return `:Message` the response email to sender
         """
         self.logger.info("read_file: processing")
