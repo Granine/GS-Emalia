@@ -422,7 +422,7 @@ class Emalia():
                 path_to_write = os.path.realpath(path_to_write)
                 file_name = os.path.basename(path)
                 #TODO save file
-            response_email_subject = f"WRITE: {len(paths_to_write)} files complete"
+            response_email_subject = f"WRITE: {len(paths_to_write)} write completed"
             response_email_body = f"{len(paths_to_write)} saved"
             # TODO specify where each file is saved
             return self._new_emalia_email(email_received, response_email_subject, response_email_body)
