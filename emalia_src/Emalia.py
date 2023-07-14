@@ -389,7 +389,7 @@ class Emalia():
         @return `:Message` the response email to sender
         """
         self.logger.info("write_file: processing")
-        main_menu = """Options"""
+        main_menu = """Write file to emalia server with commands.\n Format: [path], both relative and complete path are supported. File to write need to be passed as attachments"""
         paths_of_attachments = email_received["attachments"]
         paths_to_write = self._parse_email_part(email_received["body"][0][0])[0][1:]
         assert len(paths_of_attachments) == len(paths_to_write) or len(paths_to_write) == 1 or len(paths_of_attachments) == 0
