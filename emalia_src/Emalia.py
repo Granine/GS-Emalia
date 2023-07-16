@@ -480,7 +480,7 @@ class Emalia():
             # return main options
             response_email_subject = f"REQUEST: Main Menu"
             response_email_body = main_menu
-            return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
         
     
     def _action_execute_powershell(self, email_received:dict, command)->Message:
