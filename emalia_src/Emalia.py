@@ -464,7 +464,7 @@ class Emalia():
                 response.raise_for_status()
 
                 # If the response was successful, no Exception will be raised
-                return response.json()
+                response = response.json()
 
             except requests.HTTPError as http_err:
                 response = f'HTTP error occurred: {http_err}'
@@ -472,7 +472,7 @@ class Emalia():
             except Exception as err:
                 response = f'Error occurred: {err}' 
             response_email_subject = f"REQUEST: Completed"
-            response_email_body = response
+            response_email_body = str(response)
             return self._new_emalia_email(email_received, response_email_subject, response_email_body)
         
         # help menu
