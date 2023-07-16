@@ -12,6 +12,7 @@ from EmailManager import EmailManager
 import FileManager
 # worker
 import gpt_request
+import requests
 
 class Emalia():
     """an email interacted system that manages and perform a list of predefined tasks.
@@ -444,8 +445,8 @@ class Emalia():
         # if full body is passed
         if len(self._parse_email_part(email_received["body"][0][0])[0]) == 5:
             url = self._parse_email_part(email_received["body"][0][0])[0][1]
-            request_type = self._parse_email_part(email_received["body"][0][0])[0][2]
-            header = self._parse_email_part(email_received["body"][0][0])[0][3]
+            request_type = self._parse_email_part(email_received["body"][0][0])[0][2] # POST, GET, etc
+            headers = self._parse_email_part(email_received["body"][0][0])[0][3]
             body = self._parse_email_part(email_received["body"][0][0])[0][4]
             good_request = True
         else:
@@ -453,10 +454,28 @@ class Emalia():
     
         
         if good_request:
-            # WIP: Make request and return response
-            # return request result
-            response_email_subject = f"REQUEST: Main Menu"
-            response_email_body = main_menu
+            # make request with URL provided
+             
+
+    # convert the body to json
+            json = None
+            if body is not None:
+                json = body
+
+            try:
+                response = requests.request(request_type, url, headers=headers, json=json)
+                response.raise_for_status()
+
+                # If the response was successful, no Exception will be raised
+                return response.json()
+
+            except requests.HTTPError as http_err:
+                response = f'HTTP error occurred: {http_err}'
+
+            except Exception as err:
+                response = f'Error occurred: {err}' 
+            response_email_subject = f"REQUEST: Completed"
+            response_email_body = response
             return self._new_emalia_email(email_received, response_email_subject, response_email_body)
         
         # help menu
