@@ -337,7 +337,7 @@ class Emalia():
             main_menu += f"{key}: {value['name']}\n"
         response_email_subject = f"HELP: complete"
         response_email_body = main_menu
-        return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path]
+        return self._new_emalia_email(email_received, response_email_subject, response_email_body)
         
     def _action_manage_emalia(self, email_received:dict)->Message:
         """0 Alter emalia behaviour (settings) by permission
@@ -433,13 +433,39 @@ class Emalia():
             response_email_subject = f"WRITE: Main Menu"
             response_email_body = main_menu
             return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
-        pass
+        
         
     def _action_make_request(self, email_received:dict, http_method, http_url, http_header, http_body)->Message:
         """3 make an external request by emalia permission
         @return `:Message` the response email to sender
         """
-        pass
+        self.logger.info("make_request: processing")
+        main_menu = """Main_menu"""
+        # if full body is passed
+        if len(self._parse_email_part(email_received["body"][0][0])[0]) == 5:
+            url = self._parse_email_part(email_received["body"][0][0])[0][1]
+            request_type = self._parse_email_part(email_received["body"][0][0])[0][2]
+            header = self._parse_email_part(email_received["body"][0][0])[0][3]
+            body = self._parse_email_part(email_received["body"][0][0])[0][4]
+            good_request = True
+        else:
+            good_request = False
+    
+        
+        if good_request:
+            # WIP: Make request and return response
+            # return request result
+            response_email_subject = f"REQUEST: Main Menu"
+            response_email_body = main_menu
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
+        
+        # help menu
+        else:
+            # return main options
+            response_email_subject = f"REQUEST: Main Menu"
+            response_email_body = main_menu
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
+        
     
     def _action_execute_powershell(self, email_received:dict, command)->Message:
         """4 Execute a powershell command by emalia permission
