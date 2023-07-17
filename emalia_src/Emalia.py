@@ -451,9 +451,9 @@ class Emalia():
             good_request = True
         else:
             good_request = False
-        
+        # make request with URL provided
         if good_request:
-            # make request with URL provided
+            
             # convert the body to json
             json = None
             if body:
@@ -465,10 +465,10 @@ class Emalia():
 
                 # If the response was successful, no Exception will be raised
                 response = response.json()
-
+            # primary catch
             except requests.HTTPError as http_err:
                 response = f'HTTP error occurred: {http_err}'
-
+            # catch all
             except Exception as err:
                 response = f'Error occurred: {err}' 
             response_email_subject = f"REQUEST: Completed"
