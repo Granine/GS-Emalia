@@ -462,8 +462,6 @@ class Emalia():
             try:
                 response = requests.request(request_type, url, headers=headers, json=json)
                 response.raise_for_status()
-
-                # If the response was successful, no Exception will be raised
                 response = response.json()
             # primary catch
             except requests.HTTPError as http_err:
