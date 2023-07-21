@@ -418,7 +418,7 @@ class Emalia():
                 elif path_to_write:=FileManager.search_exact(path, path=self._file_roots, target_type="dir", ignore_type=False, exception=False):
                     pass
                 else:
-                    raise AttributeError(f"{path} does not exist")
+                    raise AttributeError(f"WRITE: {path} does not exist")
                 # after absolute path found, return email as attachment
                 path_to_write = os.path.realpath(path_to_write)
                 file_name = os.path.basename(path)
@@ -436,8 +436,9 @@ class Emalia():
             return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
         
         
-    def _action_make_request(self, email_received:dict, http_method, http_url, http_header, http_body)->Message:
+    def _action_make_request(self, email_received:dict)->Message:
         """3 make an external request by emalia permission
+        @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:Message` the response email to sender
         """
         self.logger.info("make_request: processing")
@@ -465,10 +466,10 @@ class Emalia():
                 response = response.json()
             # primary catch
             except requests.HTTPError as http_err:
-                response = f'HTTP error occurred: {http_err}'
+                response = f'REQUEST: HTTP error occurred: {http_err}'
             # catch all
             except Exception as err:
-                response = f'Error occurred: {err}' 
+                response = f'REQUEST: Error occurred: {err}' 
             response_email_subject = f"REQUEST: Completed"
             response_email_body = str(response)
             return self._new_emalia_email(email_received, response_email_subject, response_email_body)
