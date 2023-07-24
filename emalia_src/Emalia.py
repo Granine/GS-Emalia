@@ -123,7 +123,7 @@ class Emalia():
         self._HANDLER_IMAP = HANDLER_IMAP if HANDLER_IMAP else os.environ.get("HANDLER_IMAP")
         
         self.email_handler = EmailManager(HANDLER_PASSWORD=self._HANDLER_PASSWORD, HANDLER_EMAIL=self._HANDLER_EMAIL, HANDLER_SMTP=self._HANDLER_SMTP, HANDLER_IMAP=self._HANDLER_IMAP)
-       
+        self.email_handler.footer = f"email from {self.instance_name}"
     def main_loop(self, scan_interval:float=5.0):
         """Start the email listener and responding system
         @param `scan_interval:float` the time to pause between each email scan session, if processing tie (request time >= scan_interval, there will be no pause)
