@@ -270,7 +270,11 @@ class EmailManager():
         if the email is standard format, [0] is body, [1] is the same body but html encoded
         """
         def clean(text):
-            # clean text for creating a folder
+            '''Clean the text for creating a folder
+            @param `text:str` the text to clean
+            @return `:str` the cleaned text
+            '''
+            # the isalnum() method returns True if all the characters are alphanumeric, meaning alphabet letter (a-z) and numbers (0-9)
             return "".join(c if c.isalnum() else "_" for c in text)
         body = []
         attachments = []
