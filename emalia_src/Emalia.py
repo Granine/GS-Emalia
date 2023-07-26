@@ -334,9 +334,10 @@ class Emalia():
         @return `:dict` the response email to sender
         """
         self.logger.info("get_help: processing")
+        # get all task list entry
         main_menu = ""
         for key, value in self.task_list.items():
-            main_menu += f"{key}: {value['name']}\n"
+            main_menu += f"{key}: {value['name']}: {value['description']}\n" # 
         response_email_subject = f"HELP: complete"
         response_email_body = main_menu
         return self._new_emalia_email(email_received, response_email_subject, response_email_body)
