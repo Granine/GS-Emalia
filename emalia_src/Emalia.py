@@ -328,6 +328,10 @@ class Emalia():
         default_worker_functions.update(self.custom_tasks)
         return default_worker_functions
     
+    def get_task(self, text):
+        for key, value in self.task_list.items():
+            if text.lower() in value["trigger"]:
+                return value
     def _action_get_help(self, email_received:dict)->Message:
         """Get help on how to use emalia
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
@@ -337,7 +341,7 @@ class Emalia():
         # get all task list entry
         main_menu = ""
         for key, value in self.task_list.items():
-            main_menu += f"{key}: {value['name']}: {value['description']}\n" # 
+            main_menu += f"{value['trigger']}: {value['name']}: {value['description']}\n" # 
         response_email_subject = f"HELP: complete"
         response_email_body = main_menu
         return self._new_emalia_email(email_received, response_email_subject, response_email_body)
