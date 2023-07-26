@@ -135,6 +135,7 @@ class Emalia():
         self.server_start_time = datetime.now()
         # init statistics that user can read
         self.statistics = {
+            "name": self.instance_name,
             "sent": 0, 
             "received": 0, 
             "on_time": self.server_start_time
