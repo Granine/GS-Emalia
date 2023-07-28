@@ -332,6 +332,7 @@ class Emalia():
         for key, value in self.task_list.items():
             if text.lower() in value["trigger"]:
                 return value
+            
     def _action_get_help(self, email_received:dict)->Message:
         """Get help on how to use emalia
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
