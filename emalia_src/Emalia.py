@@ -329,9 +329,15 @@ class Emalia():
         return default_worker_functions
     
     def get_task(self, text):
+        """Get task from task_list
+        @param `text:str` the text to be searched in task_list
+        @return `:dict` the task_list entry that contains the text in "trigger", return None if do not exist
+        """
+        
         for key, value in self.task_list.items():
             if text.lower() in value["trigger"]:
                 return value
+        return None
             
     def _action_get_help(self, email_received:dict)->Message:
         """Get help on how to use emalia
