@@ -277,7 +277,7 @@ class Emalia():
             "?": {"function": self._action_get_help, 
                 "name":"Get help", 
                 "trigger": ["?", "help", ""], 
-                "description": "Get general help on how to use emalia", 
+                "description": f"Get general help on how to use {self.instance_name}", 
                 "help": ""},
             "0": {"function": self._action_manage_emalia, 
                 "name":"System Settings", 
