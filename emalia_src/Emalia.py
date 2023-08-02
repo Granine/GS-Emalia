@@ -317,7 +317,7 @@ class Emalia():
             "7": {"function": self._action_gpt_request,
                 "name":"GPT query", 
                 "trigger": ["7", "gpt"], 
-                "description": "Get a gpt response to email body", 
+                "description": "Get a gpt response to email sent", 
                 "help": ""},
             "9": {"function": self._action_register_custom_task,
                 "name":"Custom Tasks", 
