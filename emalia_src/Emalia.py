@@ -461,7 +461,8 @@ class Emalia():
             url = self._parse_email_part(email_received["body"][0][0])[0][1]
             request_type = self._parse_email_part(email_received["body"][0][0])[0][2] # POST, GET, etc
             headers = self._parse_email_part(email_received["body"][0][0])[0][3]
-            body = self._parse_email_part(email_received["body"][0][0])[0][4]
+            if len(self._parse_email_part(email_received["body"][0][0])[0]) > 4:
+                body = self._parse_email_part(email_received["body"][0][0])[0][4]
             good_request = True
         else:
             good_request = False
