@@ -466,7 +466,7 @@ class Emalia():
             good_request = True
         else:
             good_request = False
-        # make request with URL provided
+        # make request with the URL provided
         if good_request:
             
             # convert the body to json
