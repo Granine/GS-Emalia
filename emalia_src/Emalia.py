@@ -470,12 +470,11 @@ class Emalia():
         if good_request:
             
             # convert the body to json
-            json = None
-            if body:
-                json = body
+            json_body = None
+            if body: json_body = body
 
             try:
-                response = requests.request(request_type, url, headers=headers, json=json)
+                response = requests.request(request_type, url, headers=headers, json=json_body)
                 response.raise_for_status()
                 response = response.json()
             # primary catch
