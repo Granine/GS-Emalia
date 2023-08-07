@@ -13,6 +13,7 @@ import FileManager
 # worker
 import gpt_request
 import requests
+import subprocess # shell
 
 class Emalia():
     """an email interacted system that manages and perform a list of predefined tasks.
@@ -38,7 +39,7 @@ class Emalia():
     """
     # It is better to update settings file instead of directly update here
     # setting labelled "FILE" are stored in settings file
-    # ==================Hot-edit Options==========================
+    # ==================Hot-editable Options==========================
     # can modify anytime, even externally
     instance_name:str = "Emalia" # name of the service robot, Emalia is her default name
     server_running:bool = False # if True, a server is running, set to false will stop server at next loop
@@ -60,6 +61,7 @@ class Emalia():
     _HANDLER_PASSWORD = "" # FILE
     _HANDLER_SMTP = "" # FILE
     _HANDLER_IMAP = "" # FILE
+    _powershell_path = "" #shell path
     # =======================Runtime Variable=========================
     # do not change unless confident
     server_start_time:datetime = None # tracks the start time of last server
@@ -495,11 +497,38 @@ class Emalia():
             return self._new_emalia_email(email_received, response_email_subject, response_email_body)
         
     
-    def _action_execute_powershell(self, email_received:dict, command)->Message:
+    def _action_execute_powershell(self, email_received:dict, powershell_path:str="")->Message:
         """4 Execute a powershell command by emalia permission
         @return `:Message` the response email to sender
         """
-        pass
+        self.logger.info("execute_powershell: processing")
+        main_menu = """Main_menu"""
+        # if full body is passed
+        command = email_received["body"][0][0]
+        if not powershell_path: powershell_path = self._powershell_path
+        # make request with the URL provided
+        if command:
+            
+            try:
+                # Split the command into a list because subprocess expects the command to be in list format
+                command_list = command.split()
+
+                # Execute the command using subprocess.run()
+                completed_process = subprocess.run([powershell_path, command], capture_output=True, text=True)
+                output = completed_process.stdout    # Use .stderr to print the stderr
+                response_email_subject = f"POWERSHELL: Completed"
+                response_email_body = str(output)
+            except Exception as err:
+                response_email_subject = f"POWERSHELL: Error"
+                response_email_body = str(err)
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
+        
+        # help menu
+        else:
+            # return main options
+            response_email_subject = f"POWERSHELL: Main Menu"
+            response_email_body = main_menu
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
     
     def _action_execute_python(self, email_received:dict, python:str)->Message:
         """5 Execute a python script in current process by emalia permission
