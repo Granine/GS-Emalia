@@ -499,7 +499,8 @@ class Emalia():
     
     def _action_execute_powershell(self, email_received:dict, powershell_path:str="")->Message:
         """4 Execute a powershell command by emalia permission, ehe changes made by shell will be perserved in virual env running emalia
-        
+        @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
+        @param `powershell_path:str` the path to powershell.exe
         @return `:Message` the response email to sender
         """
         self.logger.info("execute_powershell: processing")
