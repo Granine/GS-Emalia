@@ -510,13 +510,12 @@ class Emalia():
         if not powershell_path: powershell_path = self._powershell_path
         # make request with the URL provided
         if command:
-            
             try:
                 # Split the command into a list because subprocess expects the command to be in list format
                 command_list = command.split()
 
                 # Execute the command using subprocess.run()
-                completed_process = subprocess.run([powershell_path, command], capture_output=True, text=True)
+                completed_process = subprocess.run([powershell_path, command_list], capture_output=True, text=True)
                 output = completed_process.stdout    # Use .stderr to print the stderr
                 response_email_subject = f"POWERSHELL: Completed"
                 response_email_body = str(output)
