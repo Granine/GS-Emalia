@@ -518,7 +518,7 @@ class Emalia():
                 completed_process = subprocess.run([powershell_path, command_list], capture_output=True, text=True)
                 output = completed_process.stdout    # Use .stderr to print the stderr
                 response_email_subject = f"POWERSHELL: Completed"
-                response_email_body = str(output)
+                response_email_body = str(output) # might need security check
             except Exception as err:
                 response_email_subject = f"POWERSHELL: Error"
                 response_email_body = str(err)
