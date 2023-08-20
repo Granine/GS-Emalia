@@ -535,7 +535,29 @@ class Emalia():
         """5 Execute a python script in current process by emalia permission
         @return `:Message` the response email to sender
         """
-        pass
+        self.logger.info("execute_python: processing")
+        main_menu = """Main_menu"""
+        # if full body is passed
+        python_code = email_received["body"][0][0]
+        if not powershell_path: powershell_path = self._powershell_path
+        # make request with the URL provided
+        if python_code:
+            try:
+                exec(python_code)
+                response_email_subject = f"PYTHON: Completed"
+                response_email_body = str("Complete") # might need security check
+            except Exception as err:
+                response_email_subject = f"PYTHON: Error"
+                response_email_body = str(err)
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
+        
+        # help menu
+        else:
+            # return main options
+            response_email_subject = f"PYTHON: Main Menu"
+            response_email_body = main_menu
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
+    
     
     def _action_gpt_request(self, email_received:dict)->Message:
         """7 make gpt request and return result 
