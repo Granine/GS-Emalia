@@ -498,7 +498,7 @@ class Emalia():
         
     
     def _action_execute_powershell(self, email_received:dict, powershell_path:str="")->Message:
-        """4 Execute a powershell command by emalia permission, ehe changes made by shell will be preserved in virtual env running emalia
+        """4 Execute a powershell command by emalia permission, the changes made by shell will be preserved in virtual env running emalia
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @param `powershell_path:str` the path to powershell.exe
         @return `:Message` the response email to sender
@@ -516,7 +516,7 @@ class Emalia():
 
                 # Execute the command using subprocess.run()
                 completed_process = subprocess.run([powershell_path, command_list], capture_output=True, text=True)
-                output = completed_process.stdout    # Use .stderr to print the stderr
+                output = completed_process.stdout
                 response_email_subject = f"POWERSHELL: Completed"
                 response_email_body = str(output) # might need security check
             except Exception as err:
