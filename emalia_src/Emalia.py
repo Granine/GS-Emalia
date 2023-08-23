@@ -533,7 +533,7 @@ class Emalia():
     def _action_execute_python(self, email_received:dict)->Message:
         """5 Execute a python script in current process by emalia permission
         @return `:Message` the response email to sender
-        UNSAFE: this is not safe, need to be fixed
+        UNSAFE: this function is not safe, need to limit scope of what can be executed
         """
         self.logger.info("execute_python: processing")
         main_menu = """Main_menu"""
