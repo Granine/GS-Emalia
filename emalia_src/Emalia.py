@@ -532,6 +532,7 @@ class Emalia():
     
     def _action_execute_python(self, email_received:dict)->Message:
         """5 Execute a python script in current process by emalia permission
+        @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:Message` the response email to sender
         UNSAFE: this function is not safe, need to limit scope of what can be executed
         """
@@ -613,5 +614,8 @@ class Emalia():
         
     def _action_run_custom_task(self, email_received:dict, name):
         """? run user stored custom tasks 
+        the first word in the body of of the email will be fuction identifier, rest is parameters
+        @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
+        @return `:Message` the response email to sender
         """
         pass
