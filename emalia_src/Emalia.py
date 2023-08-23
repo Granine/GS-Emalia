@@ -533,6 +533,7 @@ class Emalia():
     def _action_execute_python(self, email_received:dict)->Message:
         """5 Execute a python script in current process by emalia permission
         @return `:Message` the response email to sender
+        UNSAFE: this is not safe, need to be fixed
         """
         self.logger.info("execute_python: processing")
         main_menu = """Main_menu"""
@@ -541,9 +542,9 @@ class Emalia():
         if not powershell_path: powershell_path = self._powershell_path
         if python_code:
             try:
-                exec(python_code)
+                exec(python_code) # need security check
                 response_email_subject = f"PYTHON: Completed"
-                response_email_body = str("Completed") # might need security check
+                response_email_body = str("Completed") 
             except Exception as err:
                 response_email_subject = f"PYTHON: Error"
                 response_email_body = str(err)
