@@ -614,7 +614,7 @@ class Emalia():
         
     def _action_run_custom_task(self, email_received:dict, name):
         """? run user stored custom tasks 
-        the first word in the body of of the email will be fuction identifier, rest is parameters
+        The first word in the body of of the email will be fuction identifier, rest is parameters
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:Message` the response email to sender
         """
