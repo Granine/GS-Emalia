@@ -609,6 +609,9 @@ class Emalia():
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:Message` the response email to sender
         """
+        self.logger.info("new_task: processing")
+        main_menu = """Options"""
+        new_task = self._parse_email_part(email_received["body"][0][0])
         self.custom_tasks = {}
         pass
         
