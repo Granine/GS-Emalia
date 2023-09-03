@@ -615,8 +615,8 @@ class Emalia():
         new_task = self._parse_email_part(email_received["body"][0][0])
         
         if new_task:
-            response_email_subject = f"TASK: Task saved"
-            response_email_body = f"{new_task}\nIs saved"
+            response_email_subject = f"TASK: Completed"
+            response_email_body = f"{new_task}\n\nSaved"
         
         else:
             # return main options
