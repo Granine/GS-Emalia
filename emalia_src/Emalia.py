@@ -62,6 +62,7 @@ class Emalia():
     _HANDLER_SMTP = "" # FILE
     _HANDLER_IMAP = "" # FILE
     _powershell_path = "" #shell path
+    _custom_tasks = {}
     # =======================Runtime Variable=========================
     # do not change unless confident
     server_start_time:datetime = None # tracks the start time of last server
@@ -612,8 +613,16 @@ class Emalia():
         self.logger.info("new_task: processing")
         main_menu = """Options"""
         new_task = self._parse_email_part(email_received["body"][0][0])
-        self.custom_tasks = {}
-        pass
+        
+        if new_task:
+            response_email_subject = f"TASK: Task saved"
+            response_email_body = f"{new_task}\nIs saved"
+        
+        else:
+            # return main options
+            response_email_subject = f"TASK: Main Menu"
+            response_email_body = main_menu
+        return self._new_emalia_email(email_received, response_email_subject, response_email_body)
         
     def _action_run_custom_task(self, email_received:dict):
         """? run user stored custom tasks 
