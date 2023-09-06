@@ -609,6 +609,7 @@ class Emalia():
         """9 user can store custom tasks (nest multiple or define new)
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:Message` the response email to sender
+        @TODO save task to a txt/json file
         """
         self.logger.info("new_task: processing")
         main_menu = """Options"""
