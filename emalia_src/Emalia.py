@@ -620,7 +620,6 @@ class Emalia():
             response_email_subject = f"TASK: Completed"
             response_email_body = f"{new_task}\n\nSaved"
             
-        
         else:
             # return main options
             response_email_subject = f"TASK: Main Menu"
