@@ -55,7 +55,7 @@ class Emalia():
     _setting_location = f"{__file__}/../emalia_setting.json"
     _max_send_count = -1 # FILE max email emalia can send per instance, <0 for infinite
     _file_roots = f"{__file__}/../../" # FILE should point to GS-Emalia directory
-    _save_path = f"{__file__}/../../history.csv" # FILE a history file with .csv extension, create if DNE 
+    _save_path = f"{__file__}/../../" # FILE a history file with .csv extension, create if DNE 
     _GPT_API_KEY = "" # FILE
     _HANDLER_EMAIL = "" # FILE
     _HANDLER_PASSWORD = "" # FILE
@@ -170,7 +170,7 @@ class Emalia():
             if unseen_email:
                 try:
                     # save email
-                    self.email_handler.store_email_to_csv(unseen_email_parsed, self._save_path, "received"  )
+                    self.email_handler.store_email_to_csv(unseen_email_parsed, self._save_path + history.csv, "received"  )
                     # parse command
                     user_command = re.search("^\w*", unseen_email_parsed["body"][0][0]).group().lower() # normalize to lower case
                     # if server freeze, force all command to system manager
@@ -616,9 +616,21 @@ class Emalia():
         new_task = self._parse_email_part(email_received["body"][0][0])
         
         if new_task:
-            self.task_list[new_task["name"]] = new_task
-            response_email_subject = f"TASK: Completed"
-            response_email_body = f"{new_task}\n\nSaved"
+            # save to file
+            # TODO active flag
+            try:
+                with open(self._save_path + "custom_action.json", "r") as f:
+                    custom_tasks = json.load(f)
+                with open(self._save_path + "custom_action.json", "w") as f:
+                    custom_tasks.append(new_task)
+                    json.dump(custom_tasks, f)
+                self.task_list[new_task["name"]] = new_task
+                response_email_subject = f"TASK: Completed"
+                response_email_body = f"{new_task}\n\nSaved"
+            except Exception as err:
+                response_email_subject = f"TASK: Error"
+                response_email_body = str(err)
+            
             
         else:
             # return main options
