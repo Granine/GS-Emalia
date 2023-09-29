@@ -618,8 +618,11 @@ class Emalia():
             # save to file
             # TODO active flag
             try:
-                with open(self._save_path + "custom_action.json", "r") as f:
-                    custom_tasks = json.load(f)
+                if os.path.exists(self._save_path + "custom_action.json"):
+                    with open(self._save_path + "custom_action.json", "r") as f:
+                        custom_tasks = json.load(f)
+                else:
+                    custom_tasks = []
                 with open(self._save_path + "custom_action.json", "w") as f:
                     custom_tasks.append(new_task)
                     json.dump(custom_tasks, f)
