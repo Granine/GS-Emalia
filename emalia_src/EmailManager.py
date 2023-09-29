@@ -27,6 +27,7 @@ class EmailManager():
     TODO: support reply to emails
     TODO: support common smtp and imap other than gmail
     """
+    footer = None   #footer to attach to new email
     def __init__(self, enable_history:bool=True, attachment_path:str="", HANDLER_EMAIL:str="", HANDLER_PASSWORD:str="", HANDLER_SMTP:str|dict="smtp.gmail.com", HANDLER_IMAP:str|dict="imap.gmail.com"):
         """initialize email manager service
         TODO @param `enable_history:str` if not False will record email sent and received, takes "local", [FILE PATH], "cache", "cache-[Int]" and "all"
@@ -132,12 +133,14 @@ class EmailManager():
             parsed_email = message_from_bytes(raw_email)
         return parsed_email
     
-    def new_email(self, target_email:str, email_subject:str, email_body:str="", attachments:list|str=[], main_body_type="TEXT/PLAIN")->Message:
+    def new_email(self, target_email:str, email_subject:str, email_body:str="", attachments:list|str=[], main_body_type="TEXT/PLAIN", footer:str=None)->Message:
         """Prepare a new email
         @param `target_email:str` to whom the email will be sent
         @param `email_subject:str` subject of email to send
         @param `email_body:str` body of the email
         @param `attachments:list of str or path` for each path here, attempt to read and attach file
+        @param `main_body_type:str` MIME type of the email body
+        @footer `footer:str` footer to append to the email body, will override deafult footer attached to class. "" for no footer, None to use class footer
         @return `:Message` outgoing email
         TODO: support attachments
         """
@@ -148,6 +151,10 @@ class EmailManager():
         outgoing_email["Subject"] = email_subject
         body = Message()
         body.set_type(main_body_type)
+        if footer != None: 
+            email_body = email_body + "\n" + footer
+        elif self.footer:
+            email_body = email_body + "\n" + self.footer
         body.set_payload(email_body, "utf-8")
         outgoing_email.attach(body)
         # handle payload
@@ -263,7 +270,11 @@ class EmailManager():
         if the email is standard format, [0] is body, [1] is the same body but html encoded
         """
         def clean(text):
-            # clean text for creating a folder
+            '''Clean the text for creating a folder
+            @param `text:str` the text to clean
+            @return `:str` the cleaned text
+            '''
+            # the isalnum() method returns True if all the characters are alphanumeric, meaning alphabet letter (a-z) and numbers (0-9)
             return "".join(c if c.isalnum() else "_" for c in text)
         body = []
         attachments = []
@@ -333,6 +344,7 @@ class EmailManager():
         3 is when response messages are raised by >, and >> levels
         1, 2 will be parsed later due to their difficulties
         3 will depend on key words like On XXX wrote: to determine the start of the message.
+        #TODO
         """
         pass
         

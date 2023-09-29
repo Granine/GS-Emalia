@@ -12,6 +12,8 @@ from EmailManager import EmailManager
 import FileManager
 # worker
 import gpt_request
+import requests
+import subprocess # shell
 
 class Emalia():
     """an email interacted system that manages and perform a list of predefined tasks.
@@ -35,7 +37,9 @@ class Emalia():
         
         9. custom tasks: CUSTOM/9 [task]: store custom tasks, one can run with their custom command
     """
-    # ==================Hot-edit Options==========================
+    # It is better to update settings file instead of directly update here
+    # setting labelled "FILE" are stored in settings file
+    # ==================Hot-editable Options==========================
     # can modify anytime, even externally
     instance_name:str = "Emalia" # name of the service robot, Emalia is her default name
     server_running:bool = False # if True, a server is running, set to false will stop server at next loop
@@ -44,17 +48,22 @@ class Emalia():
     permission = {} # holds information regarding what the user can/cannot access
     vip_list = {} # a list of senders with special permission
     custom_tasks = {} # user defined tasks on the run
+    
     # =====================Configurable Settings=========================
     # should not be changed mid-execution or may error out
-    _max_send_count = -1 # max email emalia can send per instance, <0 for infinite
-    _file_roots = f"{__file__}/../../" # should point to GS-Emalia directory
-    _save_path = f"{__file__}/../../history.csv" # a history file with .csv extension, create if DNE 
-    _GPT_API_KEY = ""
-    _HANDLER_EMAIL = ""
-    _HANDLER_PASSWORD = ""
-    _HANDLER_SMTP = ""
-    _HANDLER_IMAP = ""
-    # =====================Runtime Variable=========================
+
+    _setting_location = f"{__file__}/../emalia_setting.json"
+    _max_send_count = -1 # FILE max email emalia can send per instance, <0 for infinite
+    _file_roots = f"{__file__}/../../" # FILE should point to GS-Emalia directory
+    _save_path = f"{__file__}/../../" # FILE a history file with .csv extension, create if DNE 
+    _GPT_API_KEY = "" # FILE
+    _HANDLER_EMAIL = "" # FILE
+    _HANDLER_PASSWORD = "" # FILE
+    _HANDLER_SMTP = "" # FILE
+    _HANDLER_IMAP = "" # FILE
+    _powershell_path = "" #shell path
+    _custom_tasks = {}
+    # =======================Runtime Variable=========================
     # do not change unless confident
     server_start_time:datetime = None # tracks the start time of last server
     logger = None
@@ -117,7 +126,7 @@ class Emalia():
         self._HANDLER_IMAP = HANDLER_IMAP if HANDLER_IMAP else os.environ.get("HANDLER_IMAP")
         
         self.email_handler = EmailManager(HANDLER_PASSWORD=self._HANDLER_PASSWORD, HANDLER_EMAIL=self._HANDLER_EMAIL, HANDLER_SMTP=self._HANDLER_SMTP, HANDLER_IMAP=self._HANDLER_IMAP)
-       
+        self.email_handler.footer = f"email from {self.instance_name}"
     def main_loop(self, scan_interval:float=5.0):
         """Start the email listener and responding system
         @param `scan_interval:float` the time to pause between each email scan session, if processing tie (request time >= scan_interval, there will be no pause)
@@ -127,8 +136,14 @@ class Emalia():
         self.PID = os.getpid()
         self.server_running = True
         self.server_start_time = datetime.now()
-        # init statistics
-        self.statistics = {"sent": 0, "received": 0}
+        # init statistics that user can read
+        self.statistics = {
+            "name": self.instance_name,
+            "sent": 0, 
+            "received": 0, 
+            "on_time": self.server_start_time
+        }
+        
         # infinity loop unless self.server_running is changed in loop or from other functions in separate process
         while self.server_running:
             loop_start_time = datetime.now()
@@ -155,12 +170,15 @@ class Emalia():
             if unseen_email:
                 try:
                     # save email
-                    self.email_handler.store_email_to_csv(unseen_email_parsed, self._save_path, "received"  )
+                    self.email_handler.store_email_to_csv(unseen_email_parsed, self._save_path + history.csv, "received"  )
                     # parse command
                     user_command = re.search("^\w*", unseen_email_parsed["body"][0][0]).group().lower() # normalize to lower case
                     # if server freeze, force all command to system manager
                     if self.freeze_server:
+                        # "0" = system manager
                         response_email = self.task_list["0"]["function"](unseen_email_parsed)
+                    # If user have valid key, use that key's function
+                    # TODO update the accepted value to task_list[X]["trigger"]
                     elif user_command in self.task_list.keys():
                         response_email = self.task_list[user_command]["function"](unseen_email_parsed)
                     else:
@@ -257,8 +275,13 @@ class Emalia():
         """stores Worker function list, access keys and corresponding action functions
         TODO: Redesign task_list so it is more concise
         """
-        # keys must be lower case!
+        # keys must be lower case! trigger is not case sensitive
         default_worker_functions = {
+            "?": {"function": self._action_get_help, 
+                "name":"Get help", 
+                "trigger": ["?", "help", ""], 
+                "description": f"Get general help on how to use {self.instance_name}", 
+                "help": ""},
             "0": {"function": self._action_manage_emalia, 
                 "name":"System Settings", 
                 "trigger": ["0", "manage", f"{self.instance_name}"], 
@@ -275,40 +298,83 @@ class Emalia():
                 "description": "Store an email attachment as file", 
                 "help": ""},
             "3": {"function": self._action_make_request,
-                "name":"HTTP Request", "trigger": ["3", "request"], "description": "Make a http request and get the response", "help": ""},
+                "name":"HTTP Request", 
+                "trigger": ["3", "request"], 
+                "description": "Make a http request and get the response", 
+                "help": ""},
             "4": {"function": self._action_execute_powershell,
-                "name":"Execute Powershell", "trigger": ["4", "shell", "powershell"], "description": "Run a powershell script", "help": ""},
+                "name":"Execute Powershell", 
+                "trigger": ["4", "shell", "powershell"], 
+                "description": "Run a powershell script", 
+                "help": ""},
             "5": {"function": self._action_execute_python,
-                "name":"Execute Python", "trigger": ["5", "python"], "description": "Run a python script in line", "help": ""},
+                "name":"Execute Python", 
+                "trigger": ["5", "python"], 
+                "description": "Run a python script in line", 
+                "help": ""},
             "6": {"function": self._action_execute_python,
-                "name":"Email Action", "trigger": ["6", "email"], "description": "Manage and perform email related actions", "help": ""},
+                "name":"Email Action", 
+                "trigger": ["6", "email"], 
+                "description": "Manage and perform email related actions", 
+                "help": ""},
             "7": {"function": self._action_gpt_request,
-                "name":"GPT query", "trigger": ["7", "gpt"], "description": "Get a gpt response to email body", "help": ""},
+                "name":"GPT query", 
+                "trigger": ["7", "gpt"], 
+                "description": "Get a gpt response to email sent", 
+                "help": ""},
             "9": {"function": self._action_register_custom_task,
-                "name":"Custom Tasks", "trigger": ["9", "custom"], "description": "Store a new user defined task chian", "help": ""}
+                "name":"Custom Tasks", 
+                "trigger": ["9", "custom"], 
+                "description": "Store a new user defined task chian", 
+                "help": ""}
         }
         default_worker_functions.update(self.custom_tasks)
         return default_worker_functions
+    
+    def get_task(self, text):
+        """Get task object from task_list
+        @param `text:str` the text to be searched in task_list
+        @return `:dict` the task_list entry that contains the text in "trigger", return None if do not exist
+        """
         
-    def _action_manage_emalia(self, email_received:dict, emalia_command:str="")->Message:
+        for key, value in self.task_list.items():
+            if text.lower() in value["trigger"]:
+                return value
+        return None
+            
+    def _action_get_help(self, email_received:dict)->Message:
+        """Get help on how to use emalia
+        @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
+        @return `:dict` the response email to sender
+        """
+        self.logger.info("get_help: processing")
+        # get all task list entry
+        main_menu = ""
+        for key, value in self.task_list.items():
+            main_menu += f"{value['trigger']}: {value['name']}: {value['description']}\n" # 
+        response_email_subject = f"HELP: complete"
+        response_email_body = main_menu
+        return self._new_emalia_email(email_received, response_email_subject, response_email_body)
+        
+    def _action_manage_emalia(self, email_received:dict)->Message:
         """0 Alter emalia behaviour (settings) by permission
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:dict` the response email to sender
         """
         self.logger.info("manage_emalia: processing")
         main_menu = """Options"""
-        response_email_subject = f"MANAGE: complete"
+        response_email_subject = f"HELP: complete"
         response_email_body = main_menu
         return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
     
     def _action_read_file(self, email_received:dict)->Message:
         """1 find one file and attach it as attachment to response email by emalia permission and return it
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
-            Format: 
+            Body format: [path], both relative and complete path are supported.
         @return `:Message` the response email to sender
         """
         self.logger.info("read_file: processing")
-        main_menu = """Options"""
+        main_menu = """Retrieve file stored on emalia server with commands.\n Format: [path], both relative and complete path are supported."""
         path = self._parse_email_part(email_received["body"][0][0])[0][-1]
         # if path is passed in
         if path:
@@ -340,7 +406,7 @@ class Emalia():
         @return `:Message` the response email to sender
         """
         self.logger.info("write_file: processing")
-        main_menu = """Options"""
+        main_menu = """Write file to emalia server with commands.\n Format: [path], both relative and complete path are supported. File to write need to be passed as attachments"""
         paths_of_attachments = email_received["attachments"]
         paths_to_write = self._parse_email_part(email_received["body"][0][0])[0][1:]
         assert len(paths_of_attachments) == len(paths_to_write) or len(paths_to_write) == 1 or len(paths_of_attachments) == 0
@@ -368,12 +434,12 @@ class Emalia():
                 elif path_to_write:=FileManager.search_exact(path, path=self._file_roots, target_type="dir", ignore_type=False, exception=False):
                     pass
                 else:
-                    raise AttributeError(f"{path} does not exist")
+                    raise AttributeError(f"WRITE: {path} does not exist")
                 # after absolute path found, return email as attachment
                 path_to_write = os.path.realpath(path_to_write)
                 file_name = os.path.basename(path)
                 #TODO save file
-            response_email_subject = f"WRITE: {len(paths_to_write)} files complete"
+            response_email_subject = f"WRITE: {len(paths_to_write)} write completed"
             response_email_body = f"{len(paths_to_write)} saved"
             # TODO specify where each file is saved
             return self._new_emalia_email(email_received, response_email_subject, response_email_body)
@@ -384,25 +450,115 @@ class Emalia():
             response_email_subject = f"WRITE: Main Menu"
             response_email_body = main_menu
             return self._new_emalia_email(email_received, response_email_subject, response_email_body, attachments=[path])
-        pass
         
-    def _action_make_request(self, email_received:dict, http_method, http_url, http_header, http_body)->Message:
+        
+    def _action_make_request(self, email_received:dict)->Message:
         """3 make an external request by emalia permission
+        @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:Message` the response email to sender
         """
-        pass
+        self.logger.info("make_request: processing")
+        main_menu = """Main_menu"""
+        # if full body is passed
+        if len(self._parse_email_part(email_received["body"][0][0])[0]) == 5:
+            url = self._parse_email_part(email_received["body"][0][0])[0][1]
+            request_type = self._parse_email_part(email_received["body"][0][0])[0][2] # POST, GET, etc
+            headers = self._parse_email_part(email_received["body"][0][0])[0][3]
+            if len(self._parse_email_part(email_received["body"][0][0])[0]) > 4:
+                body = self._parse_email_part(email_received["body"][0][0])[0][4]
+            good_request = True
+        else:
+            good_request = False
+        # make request with the URL provided
+        if good_request:
+            
+            # convert the body to json
+            json_body = None
+            if body: json_body = body
+
+            try:
+                response = requests.request(request_type, url, headers=headers, json=json_body)
+                response.raise_for_status()
+                response = response.json()
+            # primary catch
+            except requests.HTTPError as http_err:
+                response = f'REQUEST: HTTP error occurred: {http_err}'
+            # catch all
+            except Exception as err:
+                response = f'REQUEST: Error occurred: {err}' 
+            response_email_subject = f"REQUEST: Completed"
+            response_email_body = str(response)
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
+        
+        # help menu
+        else:
+            # return main options
+            response_email_subject = f"REQUEST: Main Menu"
+            response_email_body = main_menu
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
+        
     
-    def _action_execute_powershell(self, email_received:dict, command)->Message:
-        """4 Execute a powershell command by emalia permission
+    def _action_execute_powershell(self, email_received:dict, powershell_path:str="")->Message:
+        """4 Execute a powershell command by emalia permission, the changes made by shell will be preserved in virtual env running emalia
+        @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
+        @param `powershell_path:str` the path to powershell.exe
         @return `:Message` the response email to sender
         """
-        pass
+        self.logger.info("execute_powershell: processing")
+        main_menu = """Main_menu"""
+        # if full body is passed
+        command = email_received["body"][0][0]
+        if not powershell_path: powershell_path = self._powershell_path
+        if command:
+            try:
+                # Split the command into a list because subprocess expects the command to be in list format
+                command_list = command.split()
+
+                # Execute the command using subprocess.run()
+                completed_process = subprocess.run([powershell_path, command_list], capture_output=True, text=True)
+                output = completed_process.stdout
+                response_email_subject = f"POWERSHELL: Completed"
+                response_email_body = str(output) # might need security check
+            except Exception as err:
+                response_email_subject = f"POWERSHELL: Error"
+                response_email_body = str(err)
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
+        
+        # help menu
+        else:
+            # return main options
+            response_email_subject = f"POWERSHELL: Main Menu"
+            response_email_body = main_menu
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
     
-    def _action_execute_python(self, email_received:dict, python:str)->Message:
+    def _action_execute_python(self, email_received:dict)->Message:
         """5 Execute a python script in current process by emalia permission
+        @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:Message` the response email to sender
+        UNSAFE: this function is not safe, need to limit scope of what can be executed
         """
-        pass
+        self.logger.info("execute_python: processing")
+        main_menu = """Main_menu"""
+        # if full body is passed
+        python_code = email_received["body"][0][0]
+        if not powershell_path: powershell_path = self._powershell_path
+        if python_code:
+            try:
+                exec(python_code) # need security check
+                response_email_subject = f"PYTHON: Completed"
+                response_email_body = str("Completed") 
+            except Exception as err:
+                response_email_subject = f"PYTHON: Error"
+                response_email_body = str(err)
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
+        
+        # help menu
+        else:
+            # return main options
+            response_email_subject = f"PYTHON: Main Menu"
+            response_email_body = main_menu
+            return self._new_emalia_email(email_received, response_email_subject, response_email_body)
+    
     
     def _action_gpt_request(self, email_received:dict)->Message:
         """7 make gpt request and return result 
@@ -449,15 +605,44 @@ class Emalia():
             response_email_body = main_menu
         return self._new_emalia_email(email_received, response_email_subject, response_email_body)
     
-    def _action_register_custom_task(self, email_received:dict, task):
+    def _action_register_custom_task(self, email_received:dict):
         """9 user can store custom tasks (nest multiple or define new)
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:Message` the response email to sender
         """
-        self.custom_tasks = {}
-        pass
+        self.logger.info("new_task: processing")
+        main_menu = """Options"""
+        new_task = self._parse_email_part(email_received["body"][0][0])
         
-    def _action_run_custom_task(self, email_received:dict, name):
-        """? run user stored custom tasks 
+        if new_task:
+            # save to file
+            # TODO active flag
+            try:
+                if os.path.exists(self._save_path + "custom_action.json"):
+                    with open(self._save_path + "custom_action.json", "r") as f:
+                        custom_tasks = json.load(f)
+                else:
+                    custom_tasks = []
+                with open(self._save_path + "custom_action.json", "w") as f:
+                    custom_tasks.append(new_task)
+                    json.dump(custom_tasks, f)
+                self.task_list[new_task["name"]] = new_task
+                response_email_subject = f"TASK: Completed"
+                response_email_body = f"{new_task}\n\nSaved"
+            except Exception as err:
+                response_email_subject = f"TASK: Error"
+                response_email_body = str(err)
+            
+        else:
+            # return main options
+            response_email_subject = f"TASK: Main Menu"
+            response_email_body = main_menu
+        return self._new_emalia_email(email_received, response_email_subject, response_email_body)
+        
+    def _action_run_custom_task(self, email_received:dict):
+        """<custom command> run user stored custom tasks 
+        The first word in the body of of the email will be fuction identifier, rest is parameters
+        @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
+        @return `:Message` the response email to sender
         """
         pass
