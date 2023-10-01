@@ -236,7 +236,8 @@ class Emalia():
         return self.email_handler.new_email(target_email=target_email, email_subject=email_subject, email_body=email_body, attachments=attachments)
     
     def _parse_email_part(self, email_body:str)->tuple:
-        """Return a tuple of 3 that contains (Raw body part (space or [] or <> as break), [] options ([] as break), <> options (<> as break)) make sure to strip reply section before requesting
+        """Take raw text as input and parse input to emalia supported format.
+        Return a tuple of 3 that contains (Raw body part (space or [] or <> as break), [] options ([] as break), <> options (<> as break)) make sure to strip reply section before requesting
         @param `email_body:str` the email body to be parse, must be plain string, not html or rich
         @return `:tuple len(3) of list`  the parsed email body, [0][0] will be command, [0][1] first word and so on
         response will not contain <> or [], will escape with "\". So <123> with return 123, \<123\> will not
