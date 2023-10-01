@@ -267,7 +267,8 @@ class EmailManager():
         """Parse a Message format email into simple, clean dict while downloading attachments
         @param `email:Message` the email to parse
         @return `:dict` with keys "id", "content-type", "body:list", "return_path", "received", date", "from", "subject", "sender", "to", "cc", "attachments:list of path"
-        if the email is standard format, [0] is body, [1] is the same body but html encoded
+        if the email is standard format, body[0] is body in raw text, [1] is the same body but html formated
+        body[x][...] holds the body attached
         """
         def clean(text):
             '''Clean the text for creating a folder
