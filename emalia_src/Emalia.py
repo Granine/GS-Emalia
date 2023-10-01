@@ -127,6 +127,7 @@ class Emalia():
         
         self.email_handler = EmailManager(HANDLER_PASSWORD=self._HANDLER_PASSWORD, HANDLER_EMAIL=self._HANDLER_EMAIL, HANDLER_SMTP=self._HANDLER_SMTP, HANDLER_IMAP=self._HANDLER_IMAP)
         self.email_handler.footer = f"email from {self.instance_name}"
+        
     def main_loop(self, scan_interval:float=5.0):
         """Start the email listener and responding system
         @param `scan_interval:float` the time to pause between each email scan session, if processing tie (request time >= scan_interval, there will be no pause)
@@ -170,7 +171,7 @@ class Emalia():
             if unseen_email:
                 try:
                     # save email
-                    self.email_handler.store_email_to_csv(unseen_email_parsed, self._save_path + history.csv, "received"  )
+                    self.email_handler.store_email_to_csv(unseen_email_parsed, self._save_path + "history.csv", "received"  )
                     # parse command
                     user_command = re.search("^\w*", unseen_email_parsed["body"][0][0]).group().lower() # normalize to lower case
                     # if server freeze, force all command to system manager
@@ -654,4 +655,8 @@ class Emalia():
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:Message` the response email to sender
         """
-        pass
+        self.logger.info("config_task: processing")
+        main_menu = """Options"""
+        action = self._parse_email_part(email_received["body"][0][0])
+        if "active" not in new_task.keys():
+            new_task["active"] = True
