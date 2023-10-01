@@ -615,12 +615,14 @@ class Emalia():
         self.logger.info("new_task: processing")
         main_menu = """Options"""
         new_task = self._parse_email_part(email_received["body"][0][0])
+        # ensure that the new task is active unless user default not to
         if "active" not in new_task.keys():
             new_task["active"] = True
         
         if new_task:
-            # save to file
+            
             try:
+                # save new task to file
                 if os.path.exists(self._save_path + "custom_action.json"):
                     with open(self._save_path + "custom_action.json", "r") as f:
                         custom_tasks = json.load(f)
@@ -629,6 +631,7 @@ class Emalia():
                 with open(self._save_path + "custom_action.json", "w") as f:
                     custom_tasks.append(new_task)
                     json.dump(custom_tasks, f)
+                # add new task to task_list
                 self.task_list[new_task["name"]] = new_task
                 response_email_subject = f"TASK: Completed"
                 response_email_body = f"{new_task}\n\nSaved"
@@ -658,6 +661,33 @@ class Emalia():
         """
         self.logger.info("config_task: processing")
         main_menu = """Options"""
-        action = self._parse_email_part(email_received["body"][0][0])
-        if "active" not in new_task.keys():
-            new_task["active"] = True
+        task_action = self._parse_email_part(email_received["body"][0][0])[0][0]
+        if task_action:
+            if "active" == task_action.lower():
+                task_action["active"] = True
+            elif "deactive" == task_action.lower():
+                task_action["active"] = False
+            elif "delete" == task_action.lower():
+                del self.task_list[task_action["name"]]
+            # load from history
+            elif "load_all" == task_action.lower():
+                try:
+                    with open(self._save_path + "custom_action.json", "r") as f:
+                        custom_tasks = json.load(f)
+                    # add custom_tasks to task_list if not exist
+                    for custom_task in custom_tasks:
+                        if custom_task["name"] not in self.task_list.keys():
+                            self.task_list[custom_task["name"]] = custom_task
+                            self.task_list[custom_task["name"]]["active"] = True
+                            
+                except Exception as err:
+                    response_email_subject = f"TASK: Error"
+                    response_email_body = str(err)
+            else:
+                response_email_subject = f"TASK: Error"
+                response_email_body = f"Unknown command\nPlease check\n{main_menu}"
+        else:
+            # return main options
+            response_email_subject = f"TASK: Main Menu"
+            response_email_body = main_menu
+        return self._new_emalia_email(email_received, response_email_subject, response_email_body)
