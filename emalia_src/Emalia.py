@@ -613,10 +613,11 @@ class Emalia():
         self.logger.info("new_task: processing")
         main_menu = """Options"""
         new_task = self._parse_email_part(email_received["body"][0][0])
+        if "active" not in new_task.keys():
+            new_task["active"] = True
         
         if new_task:
             # save to file
-            # TODO active flag
             try:
                 if os.path.exists(self._save_path + "custom_action.json"):
                     with open(self._save_path + "custom_action.json", "r") as f:
@@ -641,6 +642,14 @@ class Emalia():
         
     def _action_run_custom_task(self, email_received:dict):
         """<custom command> run user stored custom tasks 
+        The first word in the body of of the email will be fuction identifier, rest is parameters
+        @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
+        @return `:Message` the response email to sender
+        """
+        pass
+    
+    def _action_config_custom_task(self, email_received:dict):
+        """<custom command> configure user stored custom tasks 
         The first word in the body of of the email will be fuction identifier, rest is parameters
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:Message` the response email to sender
