@@ -654,7 +654,7 @@ class Emalia():
         pass
     
     def _action_config_custom_task(self, email_received:dict):
-        """<custom command> configure user stored custom tasks 
+        """<custom command> + -c allow user to configure user stored custom tasks 
         The first word in the body of of the email will be fuction identifier, rest is parameters
         @param `email_received:dict` the email sent by sender, parsed to dict format with EmailManager.parse_email
         @return `:Message` the response email to sender
