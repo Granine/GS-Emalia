@@ -661,16 +661,26 @@ class Emalia():
         """
         self.logger.info("config_task: processing")
         main_menu = """Options"""
-        task_action = self._parse_email_part(email_received["body"][0][0])[0][0]
-        if task_action:
-            if "active" == task_action.lower():
-                task_action["active"] = True
-            elif "deactive" == task_action.lower():
-                task_action["active"] = False
-            elif "delete" == task_action.lower():
-                del self.task_list[task_action["name"]]
+        task_config_action = self._parse_email_part(email_received["body"][0][0])[0][0]
+        if len(self._parse_email_part(email_received["body"][0][0])[0]) > 1:
+            task_name = self._parse_email_part(email_received["body"][0][0])[0][1]
+        else:
+            task_name = None 
+             
+
+        if task_config_action:
+            # require task name
+            if "active" == task_config_action.lower():
+                task_config_action["active"] = True
+                self.task_list[task_name]["active"] = True
+            elif "deactive" == task_config_action.lower():
+                task_config_action["active"] = False
+                self.task_list[task_name]["active"] = False
+            elif "delete" == task_config_action.lower():
+                del self.task_list[task_name]
+            # general actions
             # load from history
-            elif "load_all" == task_action.lower():
+            elif "load_all" == task_config_action.lower():
                 try:
                     with open(self._save_path + "custom_action.json", "r") as f:
                         custom_tasks = json.load(f)
