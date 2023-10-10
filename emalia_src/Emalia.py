@@ -669,7 +669,7 @@ class Emalia():
              
 
         if task_config_action:
-            # require task name
+            # task specific actions: require task name
             if "active" == task_config_action.lower():
                 task_config_action["active"] = True
                 self.task_list[task_name]["active"] = True
