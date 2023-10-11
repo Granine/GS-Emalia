@@ -673,11 +673,17 @@ class Emalia():
             if "active" == task_config_action.lower():
                 task_config_action["active"] = True
                 self.task_list[task_name]["active"] = True
+                response_email_subject = f"TASK: ACTIVE"
+                response_email_body = f"{task_name} is now active"
             elif "deactive" == task_config_action.lower():
                 task_config_action["active"] = False
                 self.task_list[task_name]["active"] = False
+                response_email_subject = f"TASK: DEACTIVE"
+                response_email_body = f"{task_name} is now deactive"
             elif "delete" == task_config_action.lower():
                 del self.task_list[task_name]
+                response_email_subject = f"TASK: DELETED"
+                response_email_body = f"{task_name} is now deleted"
             # general actions
             # load from history
             elif "load_all" == task_config_action.lower():
@@ -689,6 +695,9 @@ class Emalia():
                         if custom_task["name"] not in self.task_list.keys():
                             self.task_list[custom_task["name"]] = custom_task
                             self.task_list[custom_task["name"]]["active"] = True
+                    response_email_subject = f"TASK: LOADED"
+                    response_email_body = f"{len(custom_tasks)} tasks loaded"
+                            
                             
                 except Exception as err:
                     response_email_subject = f"TASK: Error"
