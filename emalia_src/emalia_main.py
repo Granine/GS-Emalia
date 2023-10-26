@@ -5,7 +5,7 @@ setting_location = f"{__file__}/../emalia_setting.json"
 
 if __name__ == "__main__":
     """Allow one button trigger of emalia mainloop, testing for now, may change to terminal configurable later"""
-    #TODO support comamndline trigger of emalia_main.py
+    # TODO support comamndline trigger of emalia_main.py
     emalia_instance = Emalia(setting_location=setting_location)
     print("PID:" + str(emalia_instance.PID))
     
