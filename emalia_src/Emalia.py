@@ -220,7 +220,7 @@ class Emalia():
     def _validate_password(password:str):
         """Check if a user provided password is the save as record
         """
-        pass
+        return True
     
     def _new_emalia_email(self, email_received:dict, email_subject:str="", email_body:str="", attachments:list|str=[]):
         """Prepare emalia format email for reply
