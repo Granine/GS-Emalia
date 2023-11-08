@@ -145,7 +145,8 @@ class Emalia():
             "on_time": self.server_start_time
         }
         
-        # infinity loop unless self.server_running is changed in loop or from other functions in separate process
+        # infinity loop unless self.server_running is changed in loop or from other functions 
+        # in a separate process
         while self.server_running:
             loop_start_time = datetime.now()
             response_email = None
@@ -199,7 +200,7 @@ class Emalia():
                     self.logger.info(f"Sent email to {unseen_email_parsed['sender']}")
                         
                 except Exception as err:
-                    self.logger.exception("Error when attempting send email")
+                    self.logger.exception("Error when attempting to send email")
                 
             # calculate and sleep for desired scan_interval - current loop_time
             loop_end_time = datetime.now()
@@ -212,8 +213,9 @@ class Emalia():
         return datetime.now()
         
     def break_loop(self):
-        """Stop the execution of mainloop externally
-        Repeated call have no effect"""
+        """Stop the execution of mainloop externally, further call should have no effect
+        Server will not be listening to activities so cannot be restored
+        """
         self.server_running = False
     
     # ========================== WORKER FUNCTIONs =========================
