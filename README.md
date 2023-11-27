@@ -46,6 +46,15 @@ The process responsible for email management like reading email, sending email
       - (o) calculate file distance (depth wise)
       - (o) search files
     - (2/6) Worker functions (0-6)
+      - (): 0. system configure: MANAGE/[Emalia Instance Name]/0 [command]: various command to manage emalia
+      - (o): 1. read file: READ/1 [PATH]: return a local file, zip and return if directory
+      - (o): 2. write file: WRITE/2 [(optional)PATH to directory] + attachment list: write all attachments to a directory (auto create if DNE)
+      - (o): 3. make request: REQUEST/3 [Method] // [URL] // [HEADER] // [BODY]: Make a http request. Enter None for a field that is not needed, result will be returned
+      - (o): 4. execute powershell: SHELL/POWERSHELL/4 [command]: (DANGER) run powershell command
+      - (o): 5. execute python: PYTHON/5 [code]: (DANGER) run python code in-process
+      - (o): 6. email action: EMAIL/6 [action] [body] [body_2]...: perform email action like send email, forward and others
+      - (o): 7. GPT query: GPT/7 \<gpt settings\> [query body]: Get a gpt response to email body
+      - (): 9. custom tasks: CUSTOM/9 [task]: store custom tasks, one can run with their custom command
     - (o) Task distribution system (need improvements for more entry keyword support)
     - () Security
       - () enable/disable functions
