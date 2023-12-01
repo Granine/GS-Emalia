@@ -42,7 +42,8 @@ class Emalia():
     # ==================Hot-editable Options==========================
     # can modify anytime, even externally
     instance_name:str = "Emalia" # name of the service robot, Emalia is her default name
-    server_running:bool = False # if True, a server is running, set to false will stop server at next loop
+    server_running:bool = False # if True, a server will continue running, 
+                                # set to false will stop server at next loop
     freeze_server:bool = False # if True, will temporarily stop tasks execution except emalia_manager. 
     statistics:dict = {"sent": None, "received": None} # track statistics for current/last running instance, {"sent":int, "received":int}
     permission = {} # holds information regarding what the user can/cannot access
@@ -245,7 +246,7 @@ class Emalia():
         response will not contain <> or [], will escape with "\". So <123> with return 123, \<123\> will not
         Requires brackets to be paired, there cannot be floating brackets
         """
-        # find<>
+        # find sharp bracket <> in body
         email_sharp_bracket_pattern = r"(?<!\\)<([^<>]*)(?<!\\)>"
         matches = re.findall(email_sharp_bracket_pattern, email_body)
         # replace <> with empty [] to simplify raw body parsing. can remove this and spend more time to update raw_body parsing to handle both [] and <>
@@ -256,7 +257,7 @@ class Emalia():
             if match.strip():
                 email_sharp_bracket_part.append(match.strip())
                 
-        # find []
+        # find square brackets [] in body
         email_square_bracket_pattern = r"(?<!\\)\[([^\[\]]*)(?<!\\)\]"
         matches = re.findall(email_square_bracket_pattern, email_body)
         email_square_bracket_part = []
@@ -264,7 +265,7 @@ class Emalia():
             if match.strip(">").strip():
                 email_square_bracket_part.append(match.strip())
             
-        # find and store body content
+        # find and store raw body content
         email_raw_body_pattern = r"(?<!\\)(?:^|\])([^\[\]]*)(?<!\\)(?:$|\[)"
         matches = re.findall(email_raw_body_pattern, email_body)
         email_raw_body_part = []
